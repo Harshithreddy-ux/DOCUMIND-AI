@@ -1,15 +1,15 @@
 """
 app.py — DocuMind AI
 ====================
-Enterprise SaaS Frontend for DocuMind AI Autonomous Document Intelligence Fabric.
+Enterprise Next.js-Style SaaS Platform Frontend for DocuMind AI.
 
 Navigation:
-  - Home / System Overview
+  - System Overview
   - Omni-Ingestion Hub
-  - Human-in-the-Loop (HITL) Review
-  - Living Document Graph
-  - RAG Conversation Layer
-  - Financial Pulse Analytics
+  - HITL Verification
+  - Knowledge Graph
+  - RAG Intelligence
+  - Financial Analytics
 
 Run with:
   streamlit run app.py --server.port 8501
@@ -25,7 +25,7 @@ import streamlit as st
 
 # ── Page Configuration ────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="DocuMind AI Platform",
+    page_title="DocuMind AI — Enterprise Document Intelligence",
     page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
@@ -34,15 +34,28 @@ st.set_page_config(
 # ── Configuration Constants ───────────────────────────────────────────────────
 API_BASE = "http://localhost:8000"
 
-# ── Advanced Custom CSS Injection (Dark & Orange SaaS Design System) ─────────
+# ── Advanced Custom CSS Injection (Next.js / Tailwind Dark SaaS Styling) ─────
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
-    /* ── Global Theme Override ──────────────────────────────────────────────── */
+    /* ── Hide Streamlit Default Chrome ───────────────────────────────────────── */
+    #MainMenu { visibility: hidden !important; }
+    header { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    div[data-testid="stDecoration"] { display: none !important; }
+    div[data-testid="stStatusWidget"] { display: none !important; }
+    
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 96% !important;
+    }
+
+    /* ── Global Theme & Background ───────────────────────────────────────────── */
     html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         background-color: #0F172A !important;
         color: #F8FAFC !important;
     }
@@ -55,7 +68,7 @@ st.markdown(
     @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(16px);
+            transform: translateY(12px);
         }
         to {
             opacity: 1;
@@ -64,56 +77,93 @@ st.markdown(
     }
 
     .animate-fade-in {
-        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* ── Sidebar Styling ────────────────────────────────────────────────────── */
+    /* ── Custom App Top Header Bar ───────────────────────────────────────────── */
+    .app-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.5rem;
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .app-topbar-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #F8FAFC;
+    }
+
+    .app-topbar-title span {
+        color: #F97316;
+    }
+
+    .app-topbar-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.775rem;
+        font-weight: 600;
+        color: #4ADE80;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #22C55E;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #22C55E;
+    }
+
+    /* ── Sidebar Styling (React App Navigation Shell) ────────────────────────── */
     [data-testid="stSidebar"] {
         background-color: #0B0F19 !important;
         border-right: 1px solid #1E293B !important;
     }
 
     .sidebar-brand {
-        padding: 1.25rem 0.5rem;
-        margin-bottom: 1.5rem;
+        padding: 1rem 0.5rem 1.25rem 0.5rem;
+        margin-bottom: 1.25rem;
         border-bottom: 1px solid #1E293B;
     }
 
-    .sidebar-title {
-        font-size: 1.35rem;
+    .sidebar-brand-name {
+        font-size: 1.25rem;
         font-weight: 800;
-        letter-spacing: -0.025em;
+        letter-spacing: -0.03em;
         color: #FFFFFF;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
 
-    .sidebar-title span {
+    .sidebar-brand-name span {
         color: #F97316;
     }
 
-    .sidebar-subtitle {
-        font-size: 0.725rem;
-        font-weight: 600;
+    .sidebar-brand-sub {
+        font-size: 0.7rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: #64748B;
-        margin-top: 0.35rem;
+        margin-top: 0.2rem;
     }
 
-    /* ── Sidebar Buttons & Nav ──────────────────────────────────────────────── */
+    /* ── Sidebar Nav Buttons ─────────────────────────────────────────────────── */
     [data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         color: #94A3B8 !important;
         border: 1px solid transparent !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        font-size: 0.875rem !important;
+        font-size: 0.85rem !important;
         text-align: left !important;
-        padding: 0.625rem 0.875rem !important;
-        transition: all 0.2s ease !important;
+        padding: 0.6rem 0.85rem !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
         width: 100% !important;
     }
 
@@ -121,13 +171,7 @@ st.markdown(
         background-color: #1E293B !important;
         color: #F8FAFC !important;
         border-color: #334155 !important;
-        transform: translateX(3px);
-    }
-
-    .stButton > button[data-testid="stSidebar-active"] {
-        background-color: rgba(249, 115, 22, 0.12) !important;
-        color: #F97316 !important;
-        border-color: rgba(249, 115, 22, 0.4) !important;
+        transform: translateX(4px);
     }
 
     /* ── Main Buttons ───────────────────────────────────────────────────────── */
@@ -146,20 +190,20 @@ st.markdown(
         background-color: #334155;
         border-color: #475569;
         transform: scale(1.015);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
 
     button[kind="primary"] {
         background-color: #F97316 !important;
         color: #FFFFFF !important;
         border: 1px solid #EA580C !important;
-        box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25) !important;
+        box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3) !important;
     }
 
     button[kind="primary"]:hover {
         background-color: #EA580C !important;
         border-color: #C2410C !important;
-        box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4) !important;
+        box-shadow: 0 4px 16px rgba(249, 115, 22, 0.45) !important;
         transform: scale(1.02) !important;
     }
 
@@ -177,20 +221,20 @@ st.markdown(
     .metric-card:hover {
         border-color: #F97316;
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(249, 115, 22, 0.2);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(249, 115, 22, 0.2);
     }
 
     .metric-title {
-        font-size: 0.775rem;
+        font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #94A3B8;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
     }
 
     .metric-value {
-        font-size: 2rem;
+        font-size: 2.1rem;
         font-weight: 800;
         color: #F8FAFC;
         letter-spacing: -0.03em;
@@ -209,9 +253,8 @@ st.markdown(
     .badge-orange { background: rgba(249, 115, 22, 0.15); color: #FB923C; border: 1px solid rgba(249, 115, 22, 0.3); }
     .badge-green  { background: rgba(34, 197, 94, 0.15);  color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.3); }
     .badge-blue   { background: rgba(59, 130, 246, 0.15);  color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .badge-red    { background: rgba(239, 68, 68, 0.15);   color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
-    /* ── Section Containers & Cards ─────────────────────────────────────────── */
+    /* ── Content Containers & Banners ────────────────────────────────────────── */
     .content-card {
         background-color: #1E293B;
         border: 1px solid #334155;
@@ -224,17 +267,14 @@ st.markdown(
         background-color: rgba(249, 115, 22, 0.1);
         border: 1px solid rgba(249, 115, 22, 0.3);
         border-radius: 10px;
-        padding: 1rem 1.25rem;
+        padding: 0.875rem 1.25rem;
         color: #FDBA74;
-        font-size: 0.875rem;
+        font-size: 0.85rem;
         font-weight: 500;
         margin-bottom: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
     }
 
-    /* ── Status Pills for Tables & Logs ─────────────────────────────────────── */
+    /* ── Status Pills ───────────────────────────────────────────────────────── */
     .pill {
         font-size: 0.725rem;
         font-weight: 700;
@@ -250,7 +290,7 @@ st.markdown(
     .pill-error      { background: rgba(239, 68, 68, 0.15);  color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
     .pill-queued     { background: rgba(148, 163, 184, 0.15); color: #CBD5E1; border: 1px solid rgba(148, 163, 184, 0.3); }
 
-    /* ── Chat Styling ───────────────────────────────────────────────────────── */
+    /* ── Chat Messaging Box Styling ─────────────────────────────────────────── */
     .chat-user-box {
         background-color: #2563EB;
         color: #FFFFFF;
@@ -276,10 +316,8 @@ st.markdown(
         font-size: 0.9rem;
     }
 
-    /* ── Typography Fixes ───────────────────────────────────────────────────── */
     h1, h2, h3, h4 { color: #F8FAFC !important; font-weight: 700 !important; }
     p, span, label { color: #CBD5E1; }
-    .stCaption { color: #64748B !important; }
     hr { border-color: #1E293B !important; }
     </style>
     """,
@@ -308,7 +346,6 @@ _init_session()
 
 # ── Graceful API Wrappers ─────────────────────────────────────────────────────
 def api_get(path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-    """Execute API GET request with error suppression."""
     try:
         r = requests.get(f"{API_BASE}{path}", params=params, timeout=5)
         r.raise_for_status()
@@ -322,7 +359,6 @@ def api_get(path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict
 def api_post(
     path: str, json_data: Optional[Dict[str, Any]] = None, files: Any = None
 ) -> Optional[Dict[str, Any]]:
-    """Execute API POST request with error suppression."""
     try:
         if files:
             r = requests.post(f"{API_BASE}{path}", files=files, timeout=60)
@@ -352,8 +388,8 @@ with st.sidebar:
     st.markdown(
         """
         <div class="sidebar-brand">
-            <div class="sidebar-title">DocuMind <span>AI</span></div>
-            <div class="sidebar-subtitle">Enterprise Document Intelligence</div>
+            <div class="sidebar-brand-name">DocuMind <span>AI</span></div>
+            <div class="sidebar-brand-sub">Document Intelligence Platform</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -374,19 +410,18 @@ with st.sidebar:
 
     st.markdown("<br><hr>", unsafe_allow_html=True)
 
-    # Service Health Status Box
     if st.button("Check Backend Status", use_container_width=True):
         health = api_get("/health")
         if health:
-            st.success("All Core Services Operational")
+            st.success("Services Operational")
         else:
             st.warning("Backend Services Initializing...")
 
     st.markdown(
         """
         <div style="padding-top: 2rem; color: #475569; font-size: 0.75rem;">
-            DocuMind Engine v1.0.0<br>
-            Multi-Modal Agentic Fabric
+            Engine v1.0.0<br>
+            Multi-Modal Fabric
         </div>
         """,
         unsafe_allow_html=True,
@@ -398,9 +433,7 @@ if not st.session_state.get("backend_online", True):
     st.markdown(
         """
         <div class="status-banner-warning">
-            <div>
-                <strong>Backend Services Initializing</strong> — The DocuMind API engine is currently starting up or offline. Local features remain responsive.
-            </div>
+            <strong>Backend Services Initializing</strong> — The DocuMind API engine is starting up or offline. Local UI remains responsive.
         </div>
         """,
         unsafe_allow_html=True,
@@ -432,7 +465,6 @@ if page == "Home":
     hitl_count = sum(1 for j in all_jobs if j.get("status") == "awaiting_hitl")
     complete_count = sum(1 for j in all_jobs if j.get("status") == "complete")
     running_count = sum(1 for j in all_jobs if j.get("status") == "running")
-    error_count = sum(1 for j in all_jobs if j.get("status") == "error")
 
     # ── Custom HTML Metric Cards Row ──────────────────────────────────────────
     m1, m2, m3, m4 = st.columns(4)
@@ -483,7 +515,6 @@ if page == "Home":
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # ── Layout Grid ───────────────────────────────────────────────────────────
     col_left, col_right = st.columns([2, 1])
 
     with col_left:
@@ -646,7 +677,6 @@ elif page == "HITL":
                 reviewer = st.text_input("Reviewer Name", "Operations Lead")
                 corrections: Dict[str, Any] = {}
 
-                # Input fields for correction
                 fields = ["vendor_name", "invoice_number", "subtotal", "tax", "total"]
                 for f in fields:
                     val = st.text_input(f.replace("_", " ").title(), key=f"corr_{f}")
@@ -754,7 +784,6 @@ elif page == "Chat":
                 st.session_state._pending_query = q
 
     with c_chat:
-        # Render history
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
                 st.markdown(
@@ -810,7 +839,6 @@ elif page == "Dashboard":
     contract_count = sum(1 for d in docs if d.get("doc_type") == "contract")
     receipt_count = sum(1 for d in docs if d.get("doc_type") == "receipt")
 
-    # Custom HTML Metric Cards
     f1, f2, f3, f4 = st.columns(4)
     with f1:
         st.markdown(
