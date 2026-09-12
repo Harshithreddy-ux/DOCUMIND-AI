@@ -26,7 +26,7 @@ import streamlit as st
 # ── Page Configuration ────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="DocuMind AI Platform",
-    page_icon="https://img.icons8.com/fluency/48/document.png",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
