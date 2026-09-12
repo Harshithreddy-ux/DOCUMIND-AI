@@ -1,36 +1,47 @@
 <div align="center">
+  <h1>📄 DocuMind AI</h1>
+  <p><strong>Transforming unstructured business documents into a structured, queryable knowledge graph with automated decisioning.</strong></p>
 
-  <h1>DocuMind AI</h1>
-  <h3><em>Autonomous Document Intelligence Fabric for Enterprise & SMEs</em></h3>
+  <h3><a href="https://documind-ai-phr.streamlit.app">🔴 LIVE DEMO</a></h3>
 
   <p>
-    <a href="https://github.com/Harshithreddy-ux/DOCUMIND-AI/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
     <a href="https://github.com/Harshithreddy-ux/DOCUMIND-AI/actions"><img src="https://img.shields.io/badge/Build-Passing-brightgreen.svg" alt="CI Status"></a>
     <img src="https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white" alt="Python Version">
     <img src="https://img.shields.io/badge/Orchestration-LangGraph-6f42c1.svg" alt="LangGraph">
     <img src="https://img.shields.io/badge/LLM-Ollama_4--bit-FF6F00.svg" alt="Ollama">
     <img src="https://img.shields.io/badge/OS-Windows_11-0078D4.svg?logo=windows&logoColor=white" alt="Windows 11">
-    <img src="https://img.shields.io/badge/VRAM-≤_4GB-red.svg" alt="VRAM Ceiling">
   </p>
-
-  <p>
-    <strong>Transforming unstructured business documents (invoices, contracts, receipts, purchase orders) into a structured, queryable knowledge graph with automated decisioning and human-in-the-loop governance.</strong>
-  </p>
-
-  <p>
-    <a href="#-system-architecture">Architecture</a> •
-    <a href="#-document-processing-workflow">Workflow</a> •
-    <a href="#-quick-start-windows-11">Quick Start</a> •
-    <a href="#-core-innovations">Innovations</a> •
-    <a href="#-api-reference-summary">API Reference</a> •
-    <a href="#-author--maintainer">Author</a>
-  </p>
-
 </div>
 
 ---
 
-## 🏛️ System Architecture
+## 🎯 The Problem
+SMEs waste thousands of hours manually processing invoices, contracts, and receipts. Traditional OCR fails on unstructured data, and generic AI lacks causal validation (e.g., verifying subtotal + tax = total).
+
+## 🚀 The Solution
+**DocuMind AI** is an autonomous multi-modal fabric that ingests documents, extracts structured data using a local LLM, verifies logical consistency, and constructs a living Neo4j knowledge graph. Low-confidence extractions are securely routed to a Human-in-the-Loop (HITL) interface.
+
+---
+
+## 📸 In Action
+> **Screenshots coming soon!**
+
+---
+
+## 🛠 Tech Stack
+
+| Component | Technology |
+|---|---|
+| **Frontend** | Streamlit (Molten Copper UI), Plotly |
+| **Backend API** | FastAPI, Uvicorn |
+| **Orchestration** | LangGraph State Machine |
+| **Perception (OCR)** | PaddleOCR, LayoutParser |
+| **Cognition (LLM)** | Ollama (gemma2:2b-instruct-q4_K_M) |
+| **Database** | PostgreSQL (pgvector), Neo4j |
+
+---
+
+## ⚙️ System Architecture
 
 ```mermaid
 graph TD
