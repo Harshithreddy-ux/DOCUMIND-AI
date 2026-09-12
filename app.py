@@ -217,7 +217,7 @@ html, body, [class*="css"] {
     100% { opacity: 1; transform: translateY(0); }
 }
 
-.stMarkdown, .stDataFrame, .glass-card, .metric-card, .stForm {
+.stDataFrame, .glass-card, .metric-card, .stForm {
     animation: fadeSlideUp 0.4s ease-out forwards;
 }
 
