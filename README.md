@@ -1,34 +1,34 @@
 <div align="center">
-  <h1>📄 DocuMind AI</h1>
+  <h1>DocuMind AI</h1>
   <p><strong>Transforming unstructured business documents into a structured, queryable knowledge graph with automated decisioning.</strong></p>
 
-  <h3><a href="https://documind-ai-phr.streamlit.app">🔴 LIVE DEMO</a></h3>
+  <h3><a href="https://documind-ai-phr.streamlit.app">LIVE DEMO</a></h3>
 
   <p>
     <a href="https://github.com/Harshithreddy-ux/DOCUMIND-AI/actions"><img src="https://img.shields.io/badge/Build-Passing-brightgreen.svg" alt="CI Status"></a>
-    <img src="https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white" alt="Python Version">
+    <img src="https://img.shields.io/badge/Python-3.10+-3776AB.svg" alt="Python Version">
     <img src="https://img.shields.io/badge/Orchestration-LangGraph-6f42c1.svg" alt="LangGraph">
     <img src="https://img.shields.io/badge/LLM-Ollama_4--bit-FF6F00.svg" alt="Ollama">
-    <img src="https://img.shields.io/badge/OS-Windows_11-0078D4.svg?logo=windows&logoColor=white" alt="Windows 11">
+    <img src="https://img.shields.io/badge/OS-Windows_11-0078D4.svg" alt="Windows 11">
   </p>
 </div>
 
 ---
 
-## 🎯 The Problem
+## The Problem
 SMEs waste thousands of hours manually processing invoices, contracts, and receipts. Traditional OCR fails on unstructured data, and generic AI lacks causal validation (e.g., verifying subtotal + tax = total).
 
-## 🚀 The Solution
+## The Solution
 **DocuMind AI** is an autonomous multi-modal fabric that ingests documents, extracts structured data using a local LLM, verifies logical consistency, and constructs a living Neo4j knowledge graph. Low-confidence extractions are securely routed to a Human-in-the-Loop (HITL) interface.
 
 ---
 
-## 📸 In Action
+## In Action
 > **Screenshots coming soon!**
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -41,7 +41,7 @@ SMEs waste thousands of hours manually processing invoices, contracts, and recei
 
 ---
 
-## ⚙️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -79,7 +79,7 @@ graph TD
 
 ---
 
-## 🔄 Document Processing Workflow
+## Document Processing Workflow
 
 ```mermaid
 sequenceDiagram
@@ -109,7 +109,7 @@ sequenceDiagram
 
 ---
 
-## ⚡ Quick Start (Windows 11)
+## Quick Start (Windows 11)
 
 ### Prerequisites
 - Windows 11 Desktop
@@ -117,7 +117,7 @@ sequenceDiagram
 - Python 3.10+
 - [Ollama](https://ollama.ai) (with `gemma2:2b-instruct-q4_K_M` and `nomic-embed-text`)
 
-### 🚀 One-Click Launch
+### One-Click Launch
 Double-click `start.bat` in Windows Explorer or execute in your terminal:
 
 ```cmd
@@ -133,18 +133,18 @@ start.bat
 
 ---
 
-## 🌐 Endpoints & Dashboards
+## Endpoints & Dashboards
 
 | Service | Access URL | Function |
 |---|---|---|
-| 📊 Streamlit Dashboard | `http://localhost:8501` | Multi-page UI (Ingestion, HITL, Graph, RAG Chat) |
-| ⚡ FastAPI Gateway | `http://localhost:8000` | Asynchronous REST API & Webhook Handlers |
-| 📖 Interactive API Docs | `http://localhost:8000/docs` | OpenAPI / Swagger Documentation |
-| 🗄️ Neo4j Browser | `http://localhost:7474` | Cypher query console & raw graph inspection |
+| Streamlit Dashboard | `http://localhost:8501` | Multi-page UI (Ingestion, HITL, Graph, RAG Chat) |
+| FastAPI Gateway | `http://localhost:8000` | Asynchronous REST API & Webhook Handlers |
+| Interactive API Docs | `http://localhost:8000/docs` | OpenAPI / Swagger Documentation |
+| Neo4j Browser | `http://localhost:7474` | Cypher query console & raw graph inspection |
 
 ---
 
-## 💡 Core Innovations
+## Core Innovations
 
 ### 1. Few-Shot Schema Synthesis
 Adapt to any new document type from 2-3 examples in under 30 seconds without pre-defined templates:
@@ -173,7 +173,7 @@ Low-confidence extractions are gated by human verification, continuously enrichi
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 DOCUMIND-AI/
@@ -191,7 +191,7 @@ DOCUMIND-AI/
 
 ---
 
-## 🧮 Hardware & VRAM Budget (≤ 4GB VRAM)
+## Hardware & VRAM Budget (<= 4GB VRAM)
 
 ```mermaid
 pie title VRAM Allocation Share (Total: 3.3 GB / 4.0 GB Capacity)
@@ -211,7 +211,7 @@ pie title VRAM Allocation Share (Total: 3.3 GB / 4.0 GB Capacity)
 
 ---
 
-## 📡 API Reference Summary
+## API Reference Summary
 
 ```http
 POST   /upload              Upload document file for processing
@@ -227,7 +227,7 @@ GET    /health              Health check endpoint
 
 ---
 
-## 👨‍💻 Author & Maintainer
+## Author & Maintainer
 
 **Harshith Reddy Pujari**  
 *Principal Architect & Systems Developer*  
@@ -236,5 +236,5 @@ GET    /health              Health check endpoint
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the [MIT License](LICENSE).

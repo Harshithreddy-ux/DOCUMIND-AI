@@ -669,9 +669,7 @@ if page == "Upload":
                                     "status": "queued",
                                 })
                         time.sleep(0.3)
-                st.toast(
-                    f"Queued {len(unique_files)} document(s)!", icon="🚀"
-                )
+                st.toast(f"Queued {len(unique_files)} document(s)!")
 
     with col_q:
         st.markdown("### Queue Monitor")
@@ -691,9 +689,9 @@ if page == "Upload":
                             q_item["status"] = "complete"
                         advanced += 1
                 if advanced > 0:
-                    st.toast("Pipeline stage advanced!", icon="⚡")
+                    st.toast("Pipeline stage advanced.")
                 else:
-                    st.toast("Queue up to date.", icon="🔄")
+                    st.toast("Queue up to date.")
             else:
                 jobs_resp = api_get("/jobs")
                 if jobs_resp:
