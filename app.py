@@ -201,6 +201,39 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
+def _rag_synthesise(query: str, context: str) -> str:
+    """
+    Call local Ollama to synthesise an answer from the retrieved context.
+    Uses a minimal prompt optimised for 4-bit quantised models.
+    """
+    if not context.strip():
+        return (
+            "I couldn't find relevant documents in the knowledge base for that question. "
+            "Please upload and process some documents first."
+        )
+    try:
+        import ollama
+        model = "gemma2:2b-instruct-q4_K_M"
+        prompt = (
+            "You are a financial document assistant. Answer the question using ONLY "
+            "the document excerpts below. Be concise (2-4 sentences). "
+            "If the answer isn't in the excerpts, say so.\n\n"
+            f"DOCUMENT EXCERPTS:\n{context[:1500]}\n\n"
+            f"QUESTION: {query}\n\nANSWER:"
+        )
+        response = ollama.generate(
+            model=model,
+            prompt=prompt,
+            options={"num_predict": 200, "temperature": 0.2},
+        )
+        return response.get("response", "Unable to generate answer.").strip()
+    except Exception as exc:
+        return f"⚠️ LLM unavailable ({exc}). Retrieved context: {context[:400]}…"
+
+
+# ---------------------------------------------------------------------------
 # Page router
 # ---------------------------------------------------------------------------
 page = st.session_state.page
@@ -792,35 +825,6 @@ elif page == "Chat":
             })
             st.rerun()
 
-
-def _rag_synthesise(query: str, context: str) -> str:
-    """
-    Call local Ollama to synthesise an answer from the retrieved context.
-    Uses a minimal prompt optimised for 4-bit quantised models.
-    """
-    if not context.strip():
-        return (
-            "I couldn't find relevant documents in the knowledge base for that question. "
-            "Please upload and process some documents first."
-        )
-    try:
-        import ollama
-        model = "gemma2:2b-instruct-q4_K_M"
-        prompt = (
-            "You are a financial document assistant. Answer the question using ONLY "
-            "the document excerpts below. Be concise (2-4 sentences). "
-            "If the answer isn't in the excerpts, say so.\n\n"
-            f"DOCUMENT EXCERPTS:\n{context[:1500]}\n\n"
-            f"QUESTION: {query}\n\nANSWER:"
-        )
-        response = ollama.generate(
-            model=model,
-            prompt=prompt,
-            options={"num_predict": 200, "temperature": 0.2},
-        )
-        return response.get("response", "Unable to generate answer.").strip()
-    except Exception as exc:
-        return f"⚠️ LLM unavailable ({exc}). Retrieved context: {context[:400]}…"
 
 
 # ============================================================================
