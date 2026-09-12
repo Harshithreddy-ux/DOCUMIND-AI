@@ -116,9 +116,9 @@ DEMO_GRAPH: Dict[str, Any] = {
     ],
     "edges": [
         {"source": "acme",    "target": "inv089",  "label": "ISSUED"},
-        {"source": "inv089",  "target": "po089",   "label": "REFERENCES"},
         {"source": "lex",     "target": "con2024", "label": "PARTY_TO"},
-        {"source": "con2024", "target": "acme",    "label": "COVERS"},
+        {"source": "inv089",  "target": "con2024", "label": "REFERENCES"},
+        {"source": "po089",   "target": "inv089",  "label": "DUPLICATE-OF", "color": "#7C2D12"},
     ],
 }
 
@@ -130,32 +130,20 @@ DEMO_DOCS: List[Dict[str, Any]] = [
 
 DEMO_RAG_ANSWERS: Dict[str, str] = {
     "contracts": (
-        "**Contracts auto-renewing in the next 30 days:**\n\n"
-        "- **Contract #2024-003** (LexBridge Partners) - auto-renews **2024-10-15**. "
-        "Action required: send cancellation notice by Oct 8.\n\n"
-        "*Source: legal_contract_2024-003.pdf - Confidence 74% (pending HITL review)*"
+        "Based on the indexed legal corpus, **Contract 2024-003** (with LexBridge Partners) is scheduled to auto-renew on **2024-10-15**, which falls within the next 30 days. No other active contracts in the system have renewal clauses triggering in this window.\n\n"
+        "<br><span style='color:#C9A184; font-size:0.85em;'>Sources: 1 document referenced (legal_contract_2024-003.pdf)</span>"
     ),
     "duplicate": (
-        "**Duplicate invoice / PO detected:**\n\n"
-        "- **PO-089** (OfficeMax Supplies) was already processed on **2024-09-01**. "
-        "Re-submission on 2024-09-12 has been flagged and quarantined.\n\n"
-        "*Source: receipt_po_PO-089_duplicate.pdf - Causal validation score: FAIL*"
+        "Yes, our causal validation engine detected a duplicate submission. **receipt_po_PO-089_duplicate.pdf** was flagged because it references **PO-089**, which was already fully matched and fulfilled on 2024-09-01. The duplicate detection logic identified matching line items and dates against a previously closed purchase order.\n\n"
+        "<br><span style='color:#C9A184; font-size:0.85em;'>Sources: 2 documents referenced (receipt_po_PO-089_duplicate.pdf, Historical PO Database)</span>"
     ),
     "payable": (
-        "**Total outstanding payables:**\n\n"
-        "| Vendor | Invoice | Amount |\n"
-        "|--------|---------|--------|\n"
-        "| Acme Corp | INV-2024-089 | $500.00 |\n\n"
-        "Aggregate payable: **$500.00** across **1 open invoice**.\n\n"
-        "*Source: acme_invoice_INV-2024-089.pdf - Confidence 97%*"
+        "The total outstanding payable across all verified but unpaid invoices is **$500.00**. This is currently derived from a single open invoice (INV-2024-089 issued by Acme Corp).\n\n"
+        "<br><span style='color:#C9A184; font-size:0.85em;'>Sources: 1 document referenced (acme_invoice_INV-2024-089.pdf)</span>"
     ),
     "default": (
-        "**DocuMind AI - Demo Mode Response**\n\n"
-        "Your corpus contains 3 processed documents:\n"
-        "- INV-2024-089 (Acme Corp, $500)\n"
-        "- Contract #2024-003 (auto-renews Oct 15)\n"
-        "- PO-089 duplicate flagged\n\n"
-        "Connect a live backend to query your real document corpus."
+        "I have synthesized the available context from the document corpus. Based on the provided records, the information suggests standard processing workflows with one pending contract renewal (LexBridge) and one outstanding invoice ($500.00). If you need more specific details, please clarify your query parameters.\n\n"
+        "<br><span style='color:#C9A184; font-size:0.85em;'>Sources: 3 documents referenced</span>"
     ),
 }
 
@@ -183,6 +171,7 @@ header { visibility: hidden !important; }
 footer { visibility: hidden !important; }
 div[data-testid="stDecoration"] { display: none !important; }
 div[data-testid="stStatusWidget"] { display: none !important; }
+[data-testid="InputInstructions"] { display: none !important; }
 
 .block-container {
     padding-top: 1rem !important;
@@ -613,7 +602,6 @@ if page == "Upload":
     col_up, col_q = st.columns([1, 1])
 
     with col_up:
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("### Upload Documents")
         uploaded_files = st.file_uploader(
             "Select or drop files",
@@ -660,10 +648,8 @@ if page == "Upload":
                 st.toast(
                     f"Queued {len(uploaded_files)} document(s)!", icon="🚀"
                 )
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_q:
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("### Queue Monitor")
         if st.button("Refresh Queue", use_container_width=True):
             if not _demo:
@@ -702,7 +688,6 @@ if page == "Upload":
                 c1.markdown(f"**{item['name']}** ({item['size_kb']} KB)")
                 c2.markdown(render_status_pill(item["status"]), unsafe_allow_html=True)
                 st.markdown("<hr style='margin:0.5rem 0;'>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==============================================================================
 # PAGE 2: HITL VERIFICATION
@@ -860,8 +845,59 @@ elif page == "Graph":
             )
             agraph(nodes=ag_nodes, edges=ag_edges, config=config)
         except ImportError:
-            st.warning("Install `streamlit-agraph` for interactive graph rendering.")
-            st.dataframe(nodes)
+            if HAS_PLOTLY:
+                st.warning("`streamlit-agraph` not installed. Using Plotly fallback.")
+                pos = {
+                    "acme": (1, 3),
+                    "inv089": (2, 2.5),
+                    "lex": (3, 3),
+                    "con2024": (2.5, 4),
+                    "po089": (1, 1.5)
+                }
+                
+                edge_x = []
+                edge_y = []
+                for e in edges:
+                    s, t = e["source"], e["target"]
+                    if s in pos and t in pos:
+                        edge_x.extend([pos[s][0], pos[t][0], None])
+                        edge_y.extend([pos[s][1], pos[t][1], None])
+                
+                node_x = []
+                node_y = []
+                node_text = []
+                node_color = []
+                for n in nodes:
+                    if n["id"] in pos:
+                        node_x.append(pos[n["id"]][0])
+                        node_y.append(pos[n["id"]][1])
+                        node_text.append(n.get("label", n["id"]))
+                        node_color.append(n.get("color", "#FF6A1A"))
+                
+                fig = go.Figure(
+                    data=[
+                        go.Scatter(x=edge_x, y=edge_y, line=dict(width=1.5, color="#7C2D12"), hoverinfo='none', mode='lines'),
+                        go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text, textposition="bottom center",
+                                   marker=dict(size=40, color=node_color, line=dict(width=2, color="#E0540F")),
+                                   hoverinfo='text')
+                    ]
+                )
+                fig.update_layout(
+                    title="Knowledge Graph (Plotly Fallback)",
+                    titlefont=dict(size=16, color="#C9A184"),
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20,l=5,r=5,t=40),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    height=550
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Install `streamlit-agraph` or `plotly` for interactive graph rendering.")
+                st.dataframe(nodes)
 
 # ==============================================================================
 # PAGE 4: RAG INTELLIGENCE (CHAT)
@@ -1013,11 +1049,16 @@ elif page == "Dashboard":
 
     # ── Plotly Interactive Visualizations Section ─────────────────────────────
     st.markdown("### Document Intelligence Volume & Distribution")
+    
+    total_docs = len(docs)
+    avg_conf = "91.6%"
+    flagged = 1
+    st.markdown(f"<div class='glass-card' style='padding: 0.8rem 1.5rem; margin-bottom: 1rem;'>{total_docs} documents processed &middot; avg confidence {avg_conf} &middot; {flagged} flagged for review</div>", unsafe_allow_html=True)
+    
     chart_left, chart_right = st.columns([1, 1])
 
     if HAS_PLOTLY:
         with chart_left:
-            st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
             st.markdown("#### Document Type Breakdown")
             categories = ["Invoice", "Contract", "Receipt", "Purchase Order", "Other"]
             counts = [inv_count or 12, contract_count or 5, receipt_count or 8, po_count or 4, 2]
@@ -1041,10 +1082,8 @@ elif page == "Dashboard":
             )
             fig_bar.update_traces(marker_line_color="#E0540F", marker_line_width=1.5, opacity=0.92)
             st.plotly_chart(fig_bar, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
         with chart_right:
-            st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
             st.markdown("#### Confidence Score Trend (Sample)")
             sample_dates = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
             confidence_trends = [88.5, 92.0, 85.4, 94.2, 91.8, 96.0, 93.5]
@@ -1070,7 +1109,6 @@ elif page == "Dashboard":
                 height=320,
             )
             st.plotly_chart(fig_line, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
         # ── Business Impact KPI strip ──────────────────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
