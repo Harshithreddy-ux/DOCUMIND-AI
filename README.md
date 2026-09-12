@@ -24,7 +24,30 @@ SMEs waste thousands of hours manually processing invoices, contracts, and recei
 ---
 
 ## In Action
-> **Screenshots coming soon!**
+
+### 1. Omni-Ingestion Hub (Main Dashboard)
+Multi-channel document capture with priority scheduling and real-time pipeline monitoring.
+<p align="center">
+  <img src="docs/1_omni_ingestion_hub.png" width="900" alt="Omni-Ingestion Hub">
+</p>
+
+### 2. Human-in-the-Loop (HITL) Verification
+Audit console to review extractions flagged for low confidence or causal validation checks.
+<p align="center">
+  <img src="docs/2_hitl_verification.png" width="900" alt="HITL Verification">
+</p>
+
+### 3. Living Knowledge Graph
+Entity linking, causal validation network, and cross-document relational mapping powered by Neo4j graph topology.
+<p align="center">
+  <img src="docs/3_knowledge_graph.png" width="900" alt="Living Knowledge Graph">
+</p>
+
+### 4. Financial Analytics
+Real-time SME financial pulse, document volume breakdown, and confidence score trends.
+<p align="center">
+  <img src="docs/4_financial_analytics.png" width="900" alt="Financial Analytics">
+</p>
 
 ---
 
