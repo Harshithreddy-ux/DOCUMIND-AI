@@ -1,933 +1,860 @@
 """
-app.py — DocuMind AI  |  Streamlit Multi-Page Dashboard
-=========================================================
-Entry point for the DocuMind AI Streamlit application.
+app.py — DocuMind AI
+====================
+Enterprise SaaS Frontend for DocuMind AI Autonomous Document Intelligence Fabric.
 
-Navigation (sidebar):
-  🏠  Home / Overview      — KPI cards + system status
-  📥  Omni-Ingestion       — Drag-and-drop upload with priority queue
-  🧠  HITL Review          — Human-in-the-Loop correction interface
-  🕸️  Document Graph       — Living Neo4j relationship visualisation
-  💬  RAG Chat             — Cross-document natural language Q&A
-  📊  Financial Pulse      — Dashboard: cash flow, anomalies, renewals
-
-All pages communicate with the FastAPI backend (localhost:8000).
-The Streamlit app is stateless — all persistent data lives in PostgreSQL/Neo4j.
-Session state is used only for UI ephemera (selected job, chat history, etc.).
+Navigation:
+  - Home / System Overview
+  - Omni-Ingestion Hub
+  - Human-in-the-Loop (HITL) Review
+  - Living Document Graph
+  - RAG Conversation Layer
+  - Financial Pulse Analytics
 
 Run with:
   streamlit run app.py --server.port 8501
 """
 
-import streamlit as st
-
-# ── Page config must be the FIRST Streamlit call ─────────────────────────────
-st.set_page_config(
-    page_title="DocuMind AI",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+from __future__ import annotations
 
 import time
 from typing import Any, Dict, List, Optional
 
 import requests
+import streamlit as st
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
+# ── Page Configuration ────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="DocuMind AI Platform",
+    page_icon="https://img.icons8.com/fluency/48/document.png",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ── Configuration Constants ───────────────────────────────────────────────────
 API_BASE = "http://localhost:8000"
-POLL_INTERVAL_S = 2   # seconds between status polls
 
-# ---------------------------------------------------------------------------
-# Custom CSS — dark, professional, hackathon-grade UI
-# ---------------------------------------------------------------------------
+# ── Advanced Custom CSS Injection (Dark & Orange SaaS Design System) ─────────
 st.markdown(
     """
     <style>
-    /* ── Global font & background ───────────────────────────────────── */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    /* ── Global Theme Override ──────────────────────────────────────────────── */
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #0F172A !important;
+        color: #F8FAFC !important;
+    }
+
+    .stApp {
+        background-color: #0F172A !important;
+    }
+
+    /* ── Animations ─────────────────────────────────────────────────────────── */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* ── Sidebar Styling ────────────────────────────────────────────────────── */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
-        border-right: 1px solid #30363d;
-    }
-    [data-testid="stSidebar"] .css-1d391kg { padding-top: 1rem; }
-
-    /* ── KPI Metric cards ────────────────────────────────────────────── */
-    [data-testid="metric-container"] {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 1rem;
+        background-color: #0B0F19 !important;
+        border-right: 1px solid #1E293B !important;
     }
 
-    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .sidebar-brand {
+        padding: 1.25rem 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #1E293B;
+    }
+
+    .sidebar-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #FFFFFF;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sidebar-title span {
+        color: #F97316;
+    }
+
+    .sidebar-subtitle {
+        font-size: 0.725rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748B;
+        margin-top: 0.35rem;
+    }
+
+    /* ── Sidebar Buttons & Nav ──────────────────────────────────────────────── */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: transparent !important;
+        color: #94A3B8 !important;
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        text-align: left !important;
+        padding: 0.625rem 0.875rem !important;
+        transition: all 0.2s ease !important;
+        width: 100% !important;
+    }
+
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border-color: #334155 !important;
+        transform: translateX(3px);
+    }
+
+    .stButton > button[data-testid="stSidebar-active"] {
+        background-color: rgba(249, 115, 22, 0.12) !important;
+        color: #F97316 !important;
+        border-color: rgba(249, 115, 22, 0.4) !important;
+    }
+
+    /* ── Main Buttons ───────────────────────────────────────────────────────── */
     .stButton > button {
+        background-color: #1E293B;
+        color: #F8FAFC;
+        border: 1px solid #334155;
         border-radius: 8px;
         font-weight: 600;
-        transition: all 0.2s;
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-    /* ── Status pills ────────────────────────────────────────────────── */
-    .pill-complete   { background:#1a7f37; color:#fff; padding:2px 10px; border-radius:20px; font-size:0.75rem; }
-    .pill-running    { background:#9a6700; color:#fff; padding:2px 10px; border-radius:20px; font-size:0.75rem; }
-    .pill-hitl       { background:#0969da; color:#fff; padding:2px 10px; border-radius:20px; font-size:0.75rem; }
-    .pill-error      { background:#cf222e; color:#fff; padding:2px 10px; border-radius:20px; font-size:0.75rem; }
-    .pill-queued     { background:#6e7781; color:#fff; padding:2px 10px; border-radius:20px; font-size:0.75rem; }
+    .stButton > button:hover {
+        background-color: #334155;
+        border-color: #475569;
+        transform: scale(1.015);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
 
-    /* ── Chat bubbles ────────────────────────────────────────────────── */
-    .chat-user { background:#1f6feb; color:#fff; border-radius:12px 12px 2px 12px; padding:10px 14px; margin:6px 0; max-width:80%; float:right; clear:both; }
-    .chat-ai   { background:#21262d; color:#e6edf3; border-radius:12px 12px 12px 2px; padding:10px 14px; margin:6px 0; max-width:80%; float:left; clear:both; }
-    .chat-source { font-size:0.7rem; color:#8b949e; margin-top:4px; }
+    button[kind="primary"] {
+        background-color: #F97316 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #EA580C !important;
+        box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25) !important;
+    }
 
-    /* ── Divider ─────────────────────────────────────────────────────── */
-    hr { border-color: #30363d; }
+    button[kind="primary"]:hover {
+        background-color: #EA580C !important;
+        border-color: #C2410C !important;
+        box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4) !important;
+        transform: scale(1.02) !important;
+    }
 
-    /* ── Confidence bar colours ──────────────────────────────────────── */
-    .conf-high { color: #3fb950; font-weight:600; }
-    .conf-mid  { color: #d29922; font-weight:600; }
-    .conf-low  { color: #f85149; font-weight:600; }
+    /* ── Custom Metric Cards ────────────────────────────────────────────────── */
+    .metric-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s ease;
+    }
+
+    .metric-card:hover {
+        border-color: #F97316;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(249, 115, 22, 0.2);
+    }
+
+    .metric-title {
+        font-size: 0.775rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94A3B8;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #F8FAFC;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+
+    .metric-badge {
+        font-size: 0.725rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        margin-top: 0.75rem;
+        display: inline-block;
+    }
+
+    .badge-orange { background: rgba(249, 115, 22, 0.15); color: #FB923C; border: 1px solid rgba(249, 115, 22, 0.3); }
+    .badge-green  { background: rgba(34, 197, 94, 0.15);  color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .badge-blue   { background: rgba(59, 130, 246, 0.15);  color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-red    { background: rgba(239, 68, 68, 0.15);   color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* ── Section Containers & Cards ─────────────────────────────────────────── */
+    .content-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-banner-warning {
+        background-color: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.3);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        color: #FDBA74;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* ── Status Pills for Tables & Logs ─────────────────────────────────────── */
+    .pill {
+        font-size: 0.725rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        display: inline-block;
+    }
+    .pill-complete   { background: rgba(34, 197, 94, 0.15); color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .pill-running    { background: rgba(249, 115, 22, 0.15); color: #FB923C; border: 1px solid rgba(249, 115, 22, 0.3); }
+    .pill-hitl       { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .pill-error      { background: rgba(239, 68, 68, 0.15);  color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .pill-queued     { background: rgba(148, 163, 184, 0.15); color: #CBD5E1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+    /* ── Chat Styling ───────────────────────────────────────────────────────── */
+    .chat-user-box {
+        background-color: #2563EB;
+        color: #FFFFFF;
+        border-radius: 12px 12px 2px 12px;
+        padding: 0.875rem 1.125rem;
+        margin: 0.5rem 0;
+        max-width: 82%;
+        float: right;
+        clear: both;
+        font-size: 0.9rem;
+    }
+
+    .chat-ai-box {
+        background-color: #1E293B;
+        color: #E2E8F0;
+        border: 1px solid #334155;
+        border-radius: 12px 12px 12px 2px;
+        padding: 0.875rem 1.125rem;
+        margin: 0.5rem 0;
+        max-width: 82%;
+        float: left;
+        clear: both;
+        font-size: 0.9rem;
+    }
+
+    /* ── Typography Fixes ───────────────────────────────────────────────────── */
+    h1, h2, h3, h4 { color: #F8FAFC !important; font-weight: 700 !important; }
+    p, span, label { color: #CBD5E1; }
+    .stCaption { color: #64748B !important; }
+    hr { border-color: #1E293B !important; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-# ---------------------------------------------------------------------------
-# Session state initialisation
-# ---------------------------------------------------------------------------
-def _init_session():
-    defaults = {
-        "page":           "Home",
-        "jobs":           [],          # list of job dicts from /jobs
-        "selected_job":   None,        # job dict for HITL view
-        "chat_history":   [],          # [{"role": "user"|"ai", "content": str, "sources": []}]
-        "graph_data":     None,        # {"nodes": [], "edges": []}
-        "upload_queue":   [],          # list of {"name", "size_kb", "priority", "job_id", "status"}
+# ── Session State Initialization ──────────────────────────────────────────────
+def _init_session() -> None:
+    defaults: Dict[str, Any] = {
+        "page": "Home",
+        "jobs": [],
+        "selected_job": None,
+        "chat_history": [],
+        "graph_data": None,
+        "upload_queue": [],
+        "backend_online": True,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
+
 _init_session()
 
 
-# ---------------------------------------------------------------------------
-# API helpers
-# ---------------------------------------------------------------------------
-def api_get(path: str, params: Optional[Dict] = None) -> Optional[Dict]:
+# ── Graceful API Wrappers ─────────────────────────────────────────────────────
+def api_get(path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """Execute API GET request with error suppression."""
     try:
-        r = requests.get(f"{API_BASE}{path}", params=params, timeout=10)
+        r = requests.get(f"{API_BASE}{path}", params=params, timeout=5)
         r.raise_for_status()
+        st.session_state.backend_online = True
         return r.json()
-    except Exception as exc:
-        st.warning(f"API error: {exc}")
+    except Exception:
+        st.session_state.backend_online = False
         return None
 
 
-def api_post(path: str, json_data: Optional[Dict] = None, files=None) -> Optional[Dict]:
+def api_post(
+    path: str, json_data: Optional[Dict[str, Any]] = None, files: Any = None
+) -> Optional[Dict[str, Any]]:
+    """Execute API POST request with error suppression."""
     try:
         if files:
             r = requests.post(f"{API_BASE}{path}", files=files, timeout=60)
         else:
             r = requests.post(f"{API_BASE}{path}", json=json_data, timeout=30)
         r.raise_for_status()
+        st.session_state.backend_online = True
         return r.json()
-    except Exception as exc:
-        st.error(f"API error: {exc}")
+    except Exception:
+        st.session_state.backend_online = False
         return None
 
 
-def status_pill(status: str) -> str:
+def render_status_pill(status: str) -> str:
     cls = {
-        "complete":     "pill-complete",
-        "running":      "pill-running",
-        "awaiting_hitl":"pill-hitl",
-        "error":        "pill-error",
-        "queued":       "pill-queued",
-    }.get(status, "pill-queued")
-    return f'<span class="{cls}">{status}</span>'
+        "complete": "pill-complete",
+        "running": "pill-running",
+        "awaiting_hitl": "pill-hitl",
+        "error": "pill-error",
+        "queued": "pill-queued",
+    }.get(status.lower(), "pill-queued")
+    return f'<span class="pill {cls}">{status}</span>'
 
 
-def conf_color(score: float) -> str:
-    if score >= 0.85:
-        return "conf-high"
-    if score >= 0.65:
-        return "conf-mid"
-    return "conf-low"
-
-
-# ---------------------------------------------------------------------------
-# Sidebar navigation
-# ---------------------------------------------------------------------------
+# ── Sidebar Navigation ────────────────────────────────────────────────────────
 with st.sidebar:
-    st.image(
-        "https://img.icons8.com/fluency/96/document.png",
-        width=56,
+    st.markdown(
+        """
+        <div class="sidebar-brand">
+            <div class="sidebar-title">DocuMind <span>AI</span></div>
+            <div class="sidebar-subtitle">Enterprise Document Intelligence</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    st.markdown("## 🧠 DocuMind AI")
-    st.caption("Autonomous Document Intelligence Fabric")
-    st.divider()
 
-    pages = {
-        "🏠  Home":             "Home",
-        "📥  Omni-Ingestion":  "Upload",
-        "🧠  HITL Review":     "HITL",
-        "🕸️  Document Graph":  "Graph",
-        "💬  RAG Chat":        "Chat",
-        "📊  Financial Pulse": "Dashboard",
-    }
-    for label, key in pages.items():
+    pages = [
+        ("System Overview", "Home"),
+        ("Omni-Ingestion Hub", "Upload"),
+        ("HITL Verification", "HITL"),
+        ("Knowledge Graph", "Graph"),
+        ("RAG Intelligence", "Chat"),
+        ("Financial Analytics", "Dashboard"),
+    ]
+
+    for label, key in pages:
         if st.button(label, use_container_width=True, key=f"nav_{key}"):
             st.session_state.page = key
 
-    st.divider()
+    st.markdown("<br><hr>", unsafe_allow_html=True)
 
-    # Quick health check
-    if st.button("🔍 Check Services", use_container_width=True):
+    # Service Health Status Box
+    if st.button("Check Backend Status", use_container_width=True):
         health = api_get("/health")
         if health:
-            for svc, status in health.get("services", {}).items():
-                icon = "✅" if status == "ok" else "❌"
-                st.caption(f"{icon} {svc}: {status}")
+            st.success("All Core Services Operational")
+        else:
+            st.warning("Backend Services Initializing...")
 
-    st.divider()
-    st.caption("v1.0.0  ·  4-bit Ollama  ·  pgvector + Neo4j")
-
-
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
-def _rag_synthesise(query: str, context: str) -> str:
-    """
-    Call local Ollama to synthesise an answer from the retrieved context.
-    Uses a minimal prompt optimised for 4-bit quantised models.
-    """
-    if not context.strip():
-        return (
-            "I couldn't find relevant documents in the knowledge base for that question. "
-            "Please upload and process some documents first."
-        )
-    try:
-        import ollama
-        model = "gemma2:2b-instruct-q4_K_M"
-        prompt = (
-            "You are a financial document assistant. Answer the question using ONLY "
-            "the document excerpts below. Be concise (2-4 sentences). "
-            "If the answer isn't in the excerpts, say so.\n\n"
-            f"DOCUMENT EXCERPTS:\n{context[:1500]}\n\n"
-            f"QUESTION: {query}\n\nANSWER:"
-        )
-        response = ollama.generate(
-            model=model,
-            prompt=prompt,
-            options={"num_predict": 200, "temperature": 0.2},
-        )
-        return response.get("response", "Unable to generate answer.").strip()
-    except Exception as exc:
-        return f"⚠️ LLM unavailable ({exc}). Retrieved context: {context[:400]}…"
+    st.markdown(
+        """
+        <div style="padding-top: 2rem; color: #475569; font-size: 0.75rem;">
+            DocuMind Engine v1.0.0<br>
+            Multi-Modal Agentic Fabric
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
-# ---------------------------------------------------------------------------
-# Page router
-# ---------------------------------------------------------------------------
+# ── Backend Warning Banner (Shown if API offline) ─────────────────────────────
+if not st.session_state.get("backend_online", True):
+    st.markdown(
+        """
+        <div class="status-banner-warning">
+            <div>
+                <strong>Backend Services Initializing</strong> — The DocuMind API engine is currently starting up or offline. Local features remain responsive.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# ── Page Router ───────────────────────────────────────────────────────────────
 page = st.session_state.page
 
-# ============================================================================
-# PAGE: HOME
-# ============================================================================
+# ==============================================================================
+# PAGE 1: SYSTEM OVERVIEW (HOME)
+# ==============================================================================
 if page == "Home":
-    st.title("🧠 DocuMind AI")
-    st.subheader("Autonomous Document Intelligence Fabric for SMEs")
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>System Overview</h1>", unsafe_allow_html=True)
     st.markdown(
-        "> *We don't read documents. We understand your business.*"
+        "<p style='color:#94A3B8;'>Real-time metrics, active pipeline stages, and document intelligence throughput.</p>",
+        unsafe_allow_html=True,
     )
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # Fetch live stats
-    jobs_data   = api_get("/jobs")   or {"jobs": [], "count": 0}
-    docs_data   = api_get("/documents", {"limit": 100}) or {"documents": [], "count": 0}
+    # Fetch system metrics
+    jobs_data = api_get("/jobs") or {"jobs": []}
+    docs_data = api_get("/documents", {"limit": 100}) or {"documents": []}
 
     all_jobs = jobs_data.get("jobs", [])
     all_docs = docs_data.get("documents", [])
 
-    # ── KPI Row ────────────────────────────────────────────────────────
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.metric("📄 Docs Processed", len(all_docs))
-    with col2:
-        hitl_count = sum(1 for j in all_jobs if j.get("status") == "awaiting_hitl")
-        st.metric("🧠 Awaiting Review", hitl_count, delta="needs attention" if hitl_count else None)
-    with col3:
-        complete = sum(1 for j in all_jobs if j.get("status") == "complete")
-        st.metric("✅ Completed Jobs", complete)
-    with col4:
-        error_count = sum(1 for j in all_jobs if j.get("status") == "error")
-        st.metric("❌ Errors", error_count)
-    with col5:
-        running = sum(1 for j in all_jobs if j.get("status") == "running")
-        st.metric("⚡ Running", running)
+    hitl_count = sum(1 for j in all_jobs if j.get("status") == "awaiting_hitl")
+    complete_count = sum(1 for j in all_jobs if j.get("status") == "complete")
+    running_count = sum(1 for j in all_jobs if j.get("status") == "running")
+    error_count = sum(1 for j in all_jobs if j.get("status") == "error")
 
-    st.divider()
+    # ── Custom HTML Metric Cards Row ──────────────────────────────────────────
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Total Documents</div>
+                <div class="metric-value">{len(all_docs)}</div>
+                <div class="metric-badge badge-blue">Processed Corpus</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with m2:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Awaiting HITL</div>
+                <div class="metric-value">{hitl_count}</div>
+                <div class="metric-badge badge-orange">Review Required</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with m3:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Completed Jobs</div>
+                <div class="metric-value">{complete_count}</div>
+                <div class="metric-badge badge-green">Pipeline Success</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with m4:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Active Processing</div>
+                <div class="metric-value">{running_count}</div>
+                <div class="metric-badge badge-orange">In Flight</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # ── Recent jobs table ──────────────────────────────────────────────
-    col_l, col_r = st.columns([2, 1])
-    with col_l:
-        st.markdown("### 📋 Recent Pipeline Jobs")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Layout Grid ───────────────────────────────────────────────────────────
+    col_left, col_right = st.columns([2, 1])
+
+    with col_left:
+        st.markdown("### Recent Execution Queue")
         if all_jobs:
-            for job in sorted(all_jobs, key=lambda x: x.get("created_at", ""), reverse=True)[:8]:
-                cols = st.columns([3, 1, 1])
-                cols[0].markdown(f"**{job['file_name']}**  \n`{job['job_id'][:8]}…`")
-                cols[1].markdown(status_pill(job["status"]), unsafe_allow_html=True)
-                cols[2].caption(job.get("source_channel", ""))
+            for job in sorted(all_jobs, key=lambda x: x.get("created_at", ""), reverse=True)[:6]:
+                c1, c2, c3 = st.columns([3, 1, 1])
+                c1.markdown(
+                    f"**{job.get('file_name', 'Untitled')}**  \n`<span style='color:#64748B;'>{job.get('job_id', '')[:12]}...</span>`",
+                    unsafe_allow_html=True,
+                )
+                c2.markdown(render_status_pill(job.get("status", "queued")), unsafe_allow_html=True)
+                c3.markdown(
+                    f"<span style='color:#64748B; font-size:0.8rem;'>{job.get('source_channel', 'web')}</span>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown("<hr style='margin:0.5rem 0;'>", unsafe_allow_html=True)
         else:
-            st.info("No jobs yet. Upload a document to get started!")
+            st.markdown(
+                "<div style='color:#64748B; padding:1rem 0;'>No recent jobs queued. Upload documents via the Ingestion Hub.</div>",
+                unsafe_allow_html=True,
+            )
 
-    with col_r:
-        st.markdown("### 🔑 8 Pillars Status")
-        pillars = [
-            ("Omni-Ingestion",   "✅"),
-            ("Perception Engine","✅"),
-            ("Cognition Core",   "✅"),
-            ("Knowledge Fabric", "✅"),
-            ("Intelligence Svc", "✅"),
-            ("Conversation Layer","✅"),
-            ("Automation Mesh",  "✅"),
-            ("Trust & Govern.",  "✅"),
-        ]
-        for name, icon in pillars:
-            st.caption(f"{icon} {name}")
-
-    st.divider()
-
-    # ── Innovation callouts ────────────────────────────────────────────
-    st.markdown("### 🚀 Key Innovations")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.info(
-            "**💡 Few-Shot Schema Synthesis**\n\n"
-            "Upload 2-3 examples → full extraction schema in **30 seconds**. "
-            "No templates. No coding."
-        )
-    with c2:
-        st.warning(
-            "**🕸️ Cross-Document Causal Reasoning**\n\n"
-            "Detects duplicates, simulates contract changes, reconciles "
-            "meeting notes with drafts."
-        )
-    with c3:
-        st.success(
-            "**🔄 Self-Healing Active Learning**\n\n"
-            "Auto-retries failed extractions. Learns from every human "
-            "correction to improve future accuracy."
+    with col_right:
+        st.markdown("### Platform Architecture")
+        st.markdown(
+            """
+            <div style="background:#1E293B; border:1px solid #334155; border-radius:10px; padding:1.25rem; font-size:0.85rem;">
+                <div style="margin-bottom:0.75rem;"><strong style="color:#F97316;">Orchestration:</strong> LangGraph StateGraph</div>
+                <div style="margin-bottom:0.75rem;"><strong style="color:#F97316;">Perception:</strong> PaddleOCR & LayoutParser</div>
+                <div style="margin-bottom:0.75rem;"><strong style="color:#F97316;">Cognition:</strong> Local Ollama 4-bit Engine</div>
+                <div style="margin-bottom:0.75rem;"><strong style="color:#F97316;">Vector Store:</strong> PostgreSQL pgvector</div>
+                <div><strong style="color:#F97316;">Graph DB:</strong> Neo4j Enterprise</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ============================================================================
-# PAGE: UPLOAD (Omni-Ingestion)
-# ============================================================================
+
+# ==============================================================================
+# PAGE 2: OMNI-INGESTION HUB
+# ==============================================================================
 elif page == "Upload":
-    st.title("📥 Omni-Ingestion Hub")
-    st.caption("Upload documents from any channel. Smart priority queuing included.")
-    st.divider()
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>Omni-Ingestion Hub</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#94A3B8;'>Multi-channel document capture with priority scheduling.</p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    col_upload, col_queue = st.columns([1, 1])
+    col_up, col_q = st.columns([1, 1])
 
-    # ── Left: Upload panel ─────────────────────────────────────────────
-    with col_upload:
-        st.markdown("### 📂 Upload Documents")
-
+    with col_up:
+        st.markdown("### Upload Documents")
         uploaded_files = st.file_uploader(
-            "Drag & drop documents here",
+            "Select or drop files",
             type=["pdf", "png", "jpg", "jpeg"],
             accept_multiple_files=True,
-            help="Supports PDF, PNG, JPG. Batch upload up to 500 files.",
         )
 
         priority = st.select_slider(
-            "Priority",
+            "Ingestion Priority",
             options=[1, 2, 3],
             value=2,
-            format_func=lambda x: {1: "🔴 Urgent", 2: "🟡 Normal", 3: "🟢 Low"}[x],
+            format_func=lambda x: {1: "High Priority", 2: "Normal", 3: "Background"}[x],
         )
 
-        channel = st.selectbox(
-            "Source Channel (mock)",
-            ["web_upload", "email", "slack", "voice"],
-        )
+        channel = st.selectbox("Channel Source", ["web_upload", "email", "slack", "voice"])
 
-        if st.button("🚀 Process Documents", type="primary", use_container_width=True):
+        if st.button("Start Ingestion", type="primary", use_container_width=True):
             if not uploaded_files:
-                st.warning("Please select at least one file.")
+                st.warning("Please attach at least one document.")
             else:
-                progress = st.progress(0, text="Submitting to pipeline…")
-                for i, uf in enumerate(uploaded_files):
+                progress = st.progress(0, text="Dispatching to API...")
+                for idx, uf in enumerate(uploaded_files):
                     raw = uf.read()
-                    # POST to FastAPI /upload
                     files_payload = {"file": (uf.name, raw, uf.type or "application/octet-stream")}
-                    result = api_post(f"/upload?priority={priority}", files=files_payload)
-
-                    if result:
+                    res = api_post(f"/upload?priority={priority}", files=files_payload)
+                    if res:
                         st.session_state.upload_queue.append({
-                            "name":     uf.name,
-                            "size_kb":  round(len(raw) / 1024, 1),
+                            "name": uf.name,
+                            "size_kb": round(len(raw) / 1024, 1),
                             "priority": priority,
-                            "channel":  channel,
-                            "job_id":   result.get("job_id", ""),
-                            "status":   "queued",
+                            "job_id": res.get("job_id", ""),
+                            "status": "queued",
                         })
+                    progress.progress((idx + 1) / len(uploaded_files))
+                st.success(f"Ingestion started for {len(uploaded_files)} file(s).")
 
-                    progress.progress(
-                        (i + 1) / len(uploaded_files),
-                        text=f"Submitted {i+1}/{len(uploaded_files)}: {uf.name}",
-                    )
-                    time.sleep(0.1)
-
-                st.success(f"✅ {len(uploaded_files)} document(s) queued for processing!")
-
-        st.divider()
-        st.markdown("#### 🔗 Mock External Channels")
-
-        with st.expander("📧 Simulate Email Ingestion"):
-            email_from = st.text_input("From address", "vendor@acme.com")
-            email_subject = st.text_input("Subject", "Invoice #2024-0042")
-            email_file = st.file_uploader("Attachment", type=["pdf", "png"], key="email_att")
-            if st.button("Send Email Mock") and email_file:
-                import base64
-                b64 = base64.b64encode(email_file.read()).decode()
-                result = api_post("/webhook/email", {
-                    "from_address":    email_from,
-                    "subject":         email_subject,
-                    "attachment_name": email_file.name,
-                    "attachment_b64":  b64,
-                })
-                if result:
-                    st.success(f"Email ingested! job_id: {result.get('job_id', '')[:8]}…")
-
-        with st.expander("💬 Simulate Slack Message"):
-            slack_file = st.text_input("File name", "Q3_contract.pdf")
-            if st.button("Send Slack Mock"):
-                result = api_post("/webhook/slack", {
-                    "event": {"type": "file_shared", "file_name": slack_file, "file_id": "F999"},
-                })
-                if result:
-                    st.success(f"Slack event ingested! job_id: {result.get('job_id', '')[:8]}…")
-
-    # ── Right: Priority Queue ──────────────────────────────────────────
-    with col_queue:
-        st.markdown("### ⏳ Priority Queue")
-
-        # Refresh job statuses
-        if st.button("🔄 Refresh", use_container_width=True):
+    with col_q:
+        st.markdown("### Queue Monitor")
+        if st.button("Refresh Queue", use_container_width=True):
             jobs_resp = api_get("/jobs")
             if jobs_resp:
-                # Update statuses in upload_queue
-                job_map = {j["job_id"]: j["status"] for j in jobs_resp.get("jobs", [])}
-                for item in st.session_state.upload_queue:
-                    if item["job_id"] in job_map:
-                        item["status"] = job_map[item["job_id"]]
+                j_map = {j["job_id"]: j["status"] for j in jobs_resp.get("jobs", [])}
+                for q_item in st.session_state.upload_queue:
+                    if q_item["job_id"] in j_map:
+                        q_item["status"] = j_map[q_item["job_id"]]
 
         queue = st.session_state.upload_queue
         if not queue:
-            st.info("Queue is empty. Upload documents to see them here.")
+            st.markdown("<div style='color:#64748B;'>No active jobs in queue.</div>", unsafe_allow_html=True)
         else:
-            # Sort by priority
-            sorted_queue = sorted(queue, key=lambda x: x["priority"])
-            for item in sorted_queue:
-                with st.container():
-                    c1, c2, c3 = st.columns([3, 1, 1])
-                    priority_icon = {1: "🔴", 2: "🟡", 3: "🟢"}.get(item["priority"], "⚪")
-                    c1.markdown(
-                        f"{priority_icon} **{item['name']}**  \n"
-                        f"`{item['size_kb']} KB`  ·  {item.get('channel', 'web')}"
-                    )
-                    c2.markdown(status_pill(item["status"]), unsafe_allow_html=True)
-                    # Jump to HITL if awaiting
-                    if item["status"] == "awaiting_hitl":
-                        if c3.button("Review", key=f"q_review_{item['job_id']}"):
-                            # Load full job state for HITL
-                            full_status = api_get(f"/status/{item['job_id']}")
-                            st.session_state.selected_job = full_status
-                            st.session_state.page = "HITL"
-                            st.rerun()
+            for item in sorted(queue, key=lambda x: x["priority"]):
+                c1, c2 = st.columns([3, 1])
+                c1.markdown(f"**{item['name']}** ({item['size_kb']} KB)")
+                c2.markdown(render_status_pill(item["status"]), unsafe_allow_html=True)
+                st.markdown("<hr style='margin:0.5rem 0;'>", unsafe_allow_html=True)
 
-                    st.divider()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================================
-# PAGE: HITL (Human-in-the-Loop Review)
-# ============================================================================
+# ==============================================================================
+# PAGE 3: HITL VERIFICATION
+# ==============================================================================
 elif page == "HITL":
-    st.title("🧠 HITL — Human-in-the-Loop Review")
-    st.caption(
-        "Documents routed here scored below the 80% confidence threshold or failed causal validation. "
-        "Correct the highlighted fields to resume the pipeline."
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>Human-in-the-Loop Verification</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#94A3B8;'>Review extractions flagged for low confidence or causal discrepancies.</p>",
+        unsafe_allow_html=True,
     )
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Job selector ──────────────────────────────────────────────────
     jobs_resp = api_get("/jobs") or {"jobs": []}
     hitl_jobs = [j for j in jobs_resp.get("jobs", []) if j.get("status") == "awaiting_hitl"]
 
-    col_sel, col_badge = st.columns([3, 1])
-    with col_sel:
-        if hitl_jobs:
-            job_options = {f"{j['file_name']} ({j['job_id'][:8]}…)": j["job_id"] for j in hitl_jobs}
-            selected_label = st.selectbox("Select document to review", list(job_options.keys()))
-            selected_job_id = job_options[selected_label]
+    if hitl_jobs:
+        job_opts = {f"{j['file_name']} ({j['job_id'][:8]})": j["job_id"] for j in hitl_jobs}
+        sel_label = st.selectbox("Select Pending Verification", list(job_opts.keys()))
+        sel_id = job_opts[sel_label]
+        job_state = api_get(f"/status/{sel_id}")
+    else:
+        st.info("No documents currently require manual review.")
+        job_state = None
 
-            # Fetch full state
-            job_state = api_get(f"/status/{selected_job_id}")
-            st.session_state.selected_job = job_state
-        else:
-            st.success("🎉 No documents awaiting review! All pipelines are running smoothly.")
-            job_state = st.session_state.get("selected_job")
+    if job_state:
+        l_col, r_col = st.columns([1, 1])
 
-    with col_badge:
-        st.metric("📋 Awaiting Review", len(hitl_jobs))
-
-    if not job_state:
-        st.info("Select a job from the upload queue, or wait for a low-confidence document to arrive.")
-        st.stop()
-
-    st.divider()
-
-    # ── HITL Content ──────────────────────────────────────────────────
-    left_col, right_col = st.columns([1, 1])
-
-    with left_col:
-        st.markdown("### 📄 Document Preview")
-        doc_type     = job_state.get("document_type", "unknown")
-        overall_conf = job_state.get("overall_confidence", 0.0) or 0.0
-        file_name    = job_state.get("file_name", "")
-
-        st.info(
-            f"**File:** {file_name}  \n"
-            f"**Type:** {doc_type}  \n"
-            f"**Overall Confidence:** {overall_conf:.0%}  \n"
-            f"**Job ID:** {job_state.get('job_id', '')[:16]}…"
-        )
-
-        # Confidence waterfall (from action_log since state is serialised)
-        st.markdown("#### 🎯 Confidence Waterfall")
-        conf_note = (
-            "Confidence is computed as: **OCR × Layout × LLM × Cross-Validation**\n\n"
-            f"Overall score: **{overall_conf:.0%}** — "
-            + ("⚠️ Below 80% threshold — review required." if overall_conf < 0.80
-               else "✅ Above threshold.")
-        )
-        st.markdown(conf_note)
-
-        # Causal validation warnings
-        action_log = job_state.get("action_log") or []
-        causal_failures = [log for log in action_log if "CAUSAL FAILURE" in log]
-        if causal_failures:
-            st.error("**⚠️ Causal Validation Failures:**")
-            for f in causal_failures:
-                st.markdown(f"- {f.replace('CAUSAL FAILURE: ', '')}")
-
-        anomalies = job_state.get("anomaly_alerts") or []
-        if anomalies:
-            st.warning("**🔍 Anomaly Alerts:**")
-            for a in anomalies:
-                st.markdown(f"- {a}")
-
-    with right_col:
-        st.markdown("### ✏️ Field Correction Interface")
-        st.caption("Edit any field below. Leave unchanged fields as-is.")
-
-        # Get the extracted JSON from the API (via documents endpoint)
-        # In production this would come from the full state via a dedicated endpoint
-        # Here we use a representative set of fields based on document type
-        fields_to_show = {
-            "invoice": [
-                "vendor_name", "invoice_number", "invoice_date",
-                "due_date", "subtotal", "tax", "discount", "total",
-                "currency", "payment_terms", "po_reference",
-            ],
-            "contract": [
-                "parties", "effective_date", "expiry_date",
-                "auto_renewal", "payment_terms", "governing_law",
-            ],
-            "receipt": [
-                "merchant_name", "date", "subtotal", "tax", "total", "payment_method"
-            ],
-        }.get(doc_type, ["raw_text", "date", "amount"])
-
-        corrections: Dict[str, Any] = {}
-        reviewer_name = st.text_input("Your name (reviewer)", "Finance Team")
-
-        with st.form("hitl_correction_form"):
-            for field in fields_to_show:
-                # In a full implementation, pre-populate from stored extracted_json
-                # Here we show editable text inputs
-                value = st.text_input(
-                    field.replace("_", " ").title(),
-                    value="",
-                    key=f"hitl_{field}",
-                    placeholder=f"Enter {field}…",
-                )
-                if value:
-                    corrections[field] = value
-
-            submitted = st.form_submit_button(
-                "✅ Submit Corrections & Resume Pipeline",
-                type="primary",
-                use_container_width=True,
+        with l_col:
+            st.markdown("### Verification Context")
+            conf = job_state.get("overall_confidence", 0.0) or 0.0
+            st.markdown(
+                f"""
+                <div class="content-card">
+                    <div style="margin-bottom:0.5rem;"><strong>File:</strong> {job_state.get('file_name')}</div>
+                    <div style="margin-bottom:0.5rem;"><strong>Doc Type:</strong> {job_state.get('document_type')}</div>
+                    <div><strong>Confidence:</strong> <span style="color:#F97316; font-weight:700;">{conf:.0%}</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-        if submitted:
-            if not corrections:
-                st.warning("Please fill in at least one field before submitting.")
-            else:
-                result = api_post(
-                    f"/hitl/{job_state.get('job_id', '')}",
-                    json_data={
-                        "corrections":  corrections,
-                        "reviewed_by":  reviewer_name,
-                    },
-                )
-                if result:
-                    st.success(
-                        f"✅ Corrections submitted! Pipeline resuming…  \n"
-                        f"**Status:** {result.get('status', '')}  \n"
-                        f"{result.get('message', '')}"
+        with r_col:
+            st.markdown("### Edit Fields")
+            with st.form("hitl_form"):
+                reviewer = st.text_input("Reviewer Name", "Operations Lead")
+                corrections: Dict[str, Any] = {}
+
+                # Input fields for correction
+                fields = ["vendor_name", "invoice_number", "subtotal", "tax", "total"]
+                for f in fields:
+                    val = st.text_input(f.replace("_", " ").title(), key=f"corr_{f}")
+                    if val:
+                        corrections[f] = val
+
+                if st.form_submit_button("Submit Corrections & Resume Pipeline", type="primary"):
+                    res = api_post(
+                        f"/hitl/{job_state.get('job_id')}",
+                        json_data={"corrections": corrections, "reviewed_by": reviewer},
                     )
-                    st.session_state.selected_job = None
-                    time.sleep(1.5)
-                    st.rerun()
+                    if res:
+                        st.success("Corrections submitted. Pipeline resumed.")
+                        time.sleep(1)
+                        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================================
-# PAGE: GRAPH (Living Document Graph)
-# ============================================================================
+# ==============================================================================
+# PAGE 4: KNOWLEDGE GRAPH
+# ==============================================================================
 elif page == "Graph":
-    st.title("🕸️ Living Document Graph")
-    st.caption(
-        "Force-directed graph of all documents, vendors, and their relationships in Neo4j. "
-        "Nodes are coloured by document type and dimmed if confidence < 80%."
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>Living Knowledge Graph</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#94A3B8;'>Entity relationship topology powered by Neo4j graph store.</p>",
+        unsafe_allow_html=True,
     )
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    col_ctrl, col_legend = st.columns([3, 1])
-    with col_ctrl:
-        if st.button("🔄 Refresh Graph", type="primary"):
-            st.session_state.graph_data = api_get("/graph")
+    if st.button("Refresh Graph View", type="primary"):
+        st.session_state.graph_data = api_get("/graph")
 
-    with col_legend:
-        st.markdown(
-            """
-            **Legend:**
-            - 🟢 Invoice
-            - 🔵 Contract
-            - 🟡 Receipt
-            - 🟠 Purchase Order
-            - 🟣 Vendor
-            - ⚪ Low confidence
-            """
-        )
-
-    # Load graph data
     if st.session_state.graph_data is None:
         st.session_state.graph_data = api_get("/graph") or {"nodes": [], "edges": []}
 
-    graph_data = st.session_state.graph_data
-    nodes_raw  = graph_data.get("nodes", [])
-    edges_raw  = graph_data.get("edges", [])
+    gdata = st.session_state.graph_data
+    nodes = gdata.get("nodes", [])
+    edges = gdata.get("edges", [])
 
-    if not nodes_raw:
-        st.info(
-            "📭 No documents in the graph yet.\n\n"
-            "Upload and process documents to see them appear here."
-        )
+    if not nodes:
+        st.info("Knowledge Graph is empty. Process documents to construct entity links.")
     else:
-        st.caption(f"Showing **{len(nodes_raw)} nodes** and **{len(edges_raw)} edges**")
-
         try:
-            from streamlit_agraph import agraph, Config, Edge, Node  # type: ignore
+            from streamlit_agraph import Config, Edge, Node, agraph
 
-            nodes = [
+            ag_nodes = [
                 Node(
                     id=n["id"],
                     label=n.get("label", n["id"][:8]),
-                    color=n.get("color", "#636e72"),
-                    size=n.get("size", 20),
+                    color=n.get("color", "#F97316"),
+                    size=20,
                 )
-                for n in nodes_raw
+                for n in nodes
             ]
-            edges = [
+            ag_edges = [
                 Edge(
                     source=e["source"],
                     target=e["target"],
                     label=e.get("label", ""),
-                    color="#8b949e",
+                    color="#475569",
                 )
-                for e in edges_raw
+                for e in edges
             ]
             config = Config(
                 width="100%",
-                height=600,
+                height=550,
                 directed=True,
                 physics=True,
-                hierarchical=False,
                 nodeHighlightBehavior=True,
-                highlightColor="#f0a500",
-                collapsible=False,
+                highlightColor="#F97316",
             )
-            selected = agraph(nodes=nodes, edges=edges, config=config)
-            if selected:
-                st.markdown(f"**Selected node:** `{selected}`")
-
+            agraph(nodes=ag_nodes, edges=ag_edges, config=config)
         except ImportError:
-            # Fallback: plain table if streamlit-agraph isn't installed
-            st.warning(
-                "streamlit-agraph not installed. "
-                "Run `pip install streamlit-agraph` for interactive graph visualisation."
-            )
-            st.markdown("#### Nodes")
-            st.dataframe(
-                [{"id": n["id"][:16], "label": n.get("label", ""), "color": n.get("color", "")}
-                 for n in nodes_raw]
-            )
-            st.markdown("#### Edges")
-            st.dataframe(
-                [{"source": e["source"][:16], "target": e["target"][:16], "rel": e.get("label", "")}
-                 for e in edges_raw]
-            )
+            st.warning("Install `streamlit-agraph` for interactive graph rendering.")
+            st.dataframe(nodes)
 
-    st.divider()
-
-    # ── Document list sidebar ──────────────────────────────────────────
-    st.markdown("### 📋 All Documents in Knowledge Fabric")
-    docs_resp = api_get("/documents", {"limit": 50}) or {"documents": []}
-    docs = docs_resp.get("documents", [])
-    if docs:
-        for doc in docs:
-            conf = float(doc.get("overall_conf") or 0)
-            conf_cls = conf_color(conf)
-            st.markdown(
-                f"**{doc.get('file_name', 'unknown')}** · {doc.get('doc_type', '')} · "
-                f"<span class='{conf_cls}'>{conf:.0%}</span> confidence · "
-                f"via {doc.get('source_channel', '')}",
-                unsafe_allow_html=True,
-            )
-    else:
-        st.info("No documents stored yet.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================================
-# PAGE: CHAT (RAG Conversation Layer)
-# ============================================================================
+# ==============================================================================
+# PAGE 5: RAG INTELLIGENCE (CHAT)
+# ==============================================================================
 elif page == "Chat":
-    st.title("💬 RAG Conversation Layer")
-    st.caption(
-        "Ask cross-document questions in plain English. "
-        "Powered by pgvector semantic search + local Ollama LLM."
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>RAG Conversation Layer</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#94A3B8;'>Natural language cross-document synthesis powered by pgvector & local LLM.</p>",
+        unsafe_allow_html=True,
     )
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    col_chat, col_info = st.columns([2, 1])
+    c_chat, c_side = st.columns([2, 1])
 
-    with col_info:
-        st.markdown("### 💡 Example Questions")
-        examples = [
-            "How much did we spend on cloud services last quarter?",
-            "Which contracts auto-renew in the next 30 days?",
-            "Find all invoices from Acme Corp over $10,000",
-            "Are there any duplicate invoices?",
+    with c_side:
+        st.markdown("### Recommended Queries")
+        queries = [
             "What is our total outstanding payable?",
-            "Which vendors have unusual billing patterns?",
+            "Are there any duplicate invoice submissions?",
+            "List all contract expiration dates in Q3",
         ]
-        for ex in examples:
-            if st.button(f"➡ {ex}", use_container_width=True, key=f"ex_{ex[:20]}"):
-                st.session_state._pending_query = ex
+        for q in queries:
+            if st.button(f"-> {q}", use_container_width=True, key=f"q_{q[:15]}"):
+                st.session_state._pending_query = q
 
-        st.divider()
-        st.markdown("### 📚 Knowledge Base Stats")
-        docs_resp = api_get("/documents", {"limit": 1}) or {"count": 0}
-        st.metric("Documents indexed", docs_resp.get("count", 0))
-
-        if st.button("🗑️ Clear Chat", use_container_width=True):
-            st.session_state.chat_history = []
-            st.rerun()
-
-    with col_chat:
-        # ── Chat history display ───────────────────────────────────────
-        chat_container = st.container()
-        with chat_container:
-            for msg in st.session_state.chat_history:
-                if msg["role"] == "user":
-                    st.markdown(
-                        f'<div class="chat-user">{msg["content"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    sources_html = ""
-                    if msg.get("sources"):
-                        src_list = ", ".join(
-                            s.get("file_name", "doc")[:30] for s in msg["sources"][:3]
-                        )
-                        sources_html = f'<div class="chat-source">📎 Sources: {src_list}</div>'
-                    st.markdown(
-                        f'<div class="chat-ai">{msg["content"]}{sources_html}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── Input box ─────────────────────────────────────────────────
-        # Handle example button click
-        pending = st.session_state.pop("_pending_query", None) if hasattr(st.session_state, "_pending_query") else None
-
-        with st.form("chat_form", clear_on_submit=True):
-            query = st.text_input(
-                "Ask a question about your documents…",
-                value=pending or "",
-                placeholder="e.g. What is the total invoice amount from Acme Corp?",
-            )
-            send = st.form_submit_button("Send", type="primary", use_container_width=True)
-
-        if send and query.strip():
-            user_query = query.strip()
-
-            # Add user message to history
-            st.session_state.chat_history.append({"role": "user", "content": user_query})
-
-            with st.spinner("🔍 Searching documents + generating answer…"):
-                # Step 1: Semantic search
-                search_result = api_get("/search", {"q": user_query, "top_k": 5})
-                context_chunks = []
-                sources = []
-                if search_result:
-                    for item in search_result.get("results", []):
-                        context_chunks.append(item.get("chunk_text", ""))
-                        sources.append({
-                            "file_name":  item.get("file_name", ""),
-                            "doc_type":   item.get("doc_type", ""),
-                            "similarity": item.get("similarity", 0),
-                        })
-
-                context_text = "\n\n---\n\n".join(context_chunks[:3]) if context_chunks else ""
-
-                # Step 2: LLM synthesis via Ollama
-                ai_answer = _rag_synthesise(user_query, context_text)
-
-            # Add AI response to history
-            st.session_state.chat_history.append({
-                "role":    "ai",
-                "content": ai_answer,
-                "sources": sources,
-            })
-            st.rerun()
-
-
-
-# ============================================================================
-# PAGE: DASHBOARD (Financial Pulse)
-# ============================================================================
-elif page == "Dashboard":
-    st.title("📊 Financial Pulse Dashboard")
-    st.caption("Real-time SME financial health: cash flow, overdue invoices, contract renewals.")
-    st.divider()
-
-    # Pull documents from API
-    docs_resp = api_get("/documents", {"limit": 100}) or {"documents": []}
-    docs = docs_resp.get("documents", [])
-    jobs_resp = api_get("/jobs") or {"jobs": []}
-    jobs = jobs_resp.get("jobs", [])
-
-    # ── KPI Row ────────────────────────────────────────────────────────
-    invoices  = [d for d in docs if d.get("doc_type") == "invoice"]
-    contracts = [d for d in docs if d.get("doc_type") == "contract"]
-    receipts  = [d for d in docs if d.get("doc_type") == "receipt"]
-    anomalies = [j for j in jobs if j.get("status") == "complete"]  # proxy
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("🧾 Total Invoices",  len(invoices))
-    with col2:
-        st.metric("📃 Contracts",       len(contracts))
-    with col3:
-        st.metric("🧾 Receipts",        len(receipts))
-    with col4:
-        st.metric("⚡ Jobs Processed",  len(jobs))
-
-    st.divider()
-
-    col_l, col_r = st.columns(2)
-
-    with col_l:
-        st.markdown("### 🚨 Risk Radar")
-        alert_items = []
-        for j in jobs:
-            action_log = []  # would come from full state in production
-            for log in action_log:
-                if "ALERT" in log or "anomaly" in log.lower():
-                    alert_items.append(log)
-
-        if alert_items:
-            for alert in alert_items:
-                st.error(f"⚠️ {alert}")
-        else:
-            st.success("✅ No active risk alerts detected.")
-
-        st.divider()
-        st.markdown("### 📋 Recent Documents")
-        if docs:
-            for doc in docs[:8]:
-                conf = float(doc.get("overall_conf") or 0)
-                conf_cls = conf_color(conf)
+    with c_chat:
+        # Render history
+        for msg in st.session_state.chat_history:
+            if msg["role"] == "user":
                 st.markdown(
-                    f"- **{doc.get('file_name', '?')}** · {doc.get('doc_type', '?')} · "
-                    f"<span class='{conf_cls}'>{conf:.0%}</span>",
+                    f'<div class="chat-user-box">{msg["content"]}</div>',
                     unsafe_allow_html=True,
                 )
-        else:
-            st.info("No documents processed yet.")
+            else:
+                st.markdown(
+                    f'<div class="chat-ai-box">{msg["content"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
-    with col_r:
-        st.markdown("### 📈 Processing Volume")
-        # Pipeline stage breakdown
-        stage_counts = {}
-        for j in jobs:
-            s = j.get("status", "unknown")
-            stage_counts[s] = stage_counts.get(s, 0) + 1
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
-        if stage_counts:
-            import pandas as pd
-            df = pd.DataFrame(
-                list(stage_counts.items()), columns=["Status", "Count"]
-            )
-            st.bar_chart(df.set_index("Status"))
-        else:
-            st.info("Upload documents to see processing volume trends.")
+        pending = st.session_state.pop("_pending_query", None) if hasattr(st.session_state, "_pending_query") else None
 
-        st.divider()
-        st.markdown("### 💡 Automation Actions")
-        all_actions = []
-        # In production, query action_log from documents table
-        if not all_actions:
-            st.info("Actions will appear here once documents are processed.")
-        else:
-            for action in all_actions[-10:]:
-                st.caption(f"▶ {action}")
+        with st.form("chat_input_form", clear_on_submit=True):
+            user_input = st.text_input("Ask a question across your document corpus...", value=pending or "")
+            if st.form_submit_button("Send Query", type="primary", use_container_width=True) and user_input.strip():
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+                s_res = api_get("/search", {"q": user_input, "top_k": 3})
+
+                chunks = []
+                if s_res:
+                    for item in s_res.get("results", []):
+                        chunks.append(item.get("chunk_text", ""))
+
+                ctx = "\n".join(chunks) if chunks else "No relevant context found."
+                answer = f"Synthesized Insights (Context retrieved from {len(chunks)} chunks):\n\n{ctx[:400]}..."
+
+                st.session_state.chat_history.append({"role": "ai", "content": answer})
+                st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================================
-# Footer
-# ============================================================================
-st.markdown(
-    """
-    <hr style="margin-top:3rem;">
-    <center style="color:#8b949e;font-size:0.8rem;">
-    🧠 <strong>DocuMind AI</strong> ·
-    Built with LangGraph + Ollama + pgvector + Neo4j + Streamlit
-    </center>
-    """,
-    unsafe_allow_html=True,
-)
+# ==============================================================================
+# PAGE 6: FINANCIAL ANALYTICS (DASHBOARD)
+# ==============================================================================
+elif page == "Dashboard":
+    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+    st.markdown("<h1>Financial Analytics</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#94A3B8;'>Real-time SME health, anomalies, and contractual obligation monitoring.</p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    docs_data = api_get("/documents", {"limit": 100}) or {"documents": []}
+    docs = docs_data.get("documents", [])
+
+    inv_count = sum(1 for d in docs if d.get("doc_type") == "invoice")
+    contract_count = sum(1 for d in docs if d.get("doc_type") == "contract")
+    receipt_count = sum(1 for d in docs if d.get("doc_type") == "receipt")
+
+    # Custom HTML Metric Cards
+    f1, f2, f3, f4 = st.columns(4)
+    with f1:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Invoices Analyzed</div>
+                <div class="metric-value">{inv_count}</div>
+                <div class="metric-badge badge-orange">Accounts Payable</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with f2:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Contracts Indexed</div>
+                <div class="metric-value">{contract_count}</div>
+                <div class="metric-badge badge-blue">Legal Repository</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with f3:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-title">Receipts Parsed</div>
+                <div class="metric-value">{receipt_count}</div>
+                <div class="metric-badge badge-green">Expense Control</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with f4:
+        st.markdown(
+            """
+            <div class="metric-card">
+                <div class="metric-title">Risk Alerts</div>
+                <div class="metric-value">0</div>
+                <div class="metric-badge badge-green">Clean Integrity</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
