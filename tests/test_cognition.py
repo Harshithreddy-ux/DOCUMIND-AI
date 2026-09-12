@@ -4,6 +4,9 @@ tests/test_cognition.py — Unit tests for the Cognition Core
 Tests that do NOT require Ollama or any GPU — pure Python logic only.
 """
 
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import math
 import pytest
 from unittest.mock import patch, MagicMock

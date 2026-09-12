@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -35,8 +36,6 @@ logger = logging.getLogger(__name__)
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma2:2b-instruct-q4_K_M")  # ≤ 1.5 GB VRAM
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 CONFIDENCE_THRESHOLD = 0.80   # Below this → needs_hitl = True
-
-import os  # noqa: E402 (must come after OLLAMA_MODEL line — moved here)
 
 # ---------------------------------------------------------------------------
 # Pre-defined extraction schemas for known document types
@@ -202,6 +201,18 @@ def extract_fields(
         return {}
 
 
+def _num(val: Any, default: float = 0.0) -> float:
+    try:
+        return float(val) if val is not None else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _close(a: float, b: float, tol: float = 0.02) -> bool:
+    """True if |a - b| <= tol (handles small floating-point rounding)."""
+    return math.isclose(a, b, rel_tol=0.001, abs_tol=tol)
+
+
 # ---------------------------------------------------------------------------
 # Step 4: Causal Validator (Innovation #2 component)
 # ---------------------------------------------------------------------------
@@ -220,16 +231,6 @@ def validate_causally(extracted: Dict[str, Any]) -> CausalValidationResult:
     checks_run: List[str] = []
     failures: List[str] = []
     corrected: Dict[str, Any] = {}
-
-    def _num(val: Any, default: float = 0.0) -> float:
-        try:
-            return float(val) if val is not None else default
-        except (TypeError, ValueError):
-            return default
-
-    def _close(a: float, b: float, tol: float = 0.02) -> bool:
-        """True if |a - b| ≤ tol (handles small floating-point rounding)."""
-        return math.isclose(a, b, rel_tol=0.001, abs_tol=tol)
 
     # ── Check 1: subtotal + tax - discount == total ─────────────────────
     subtotal = _num(extracted.get("subtotal"))

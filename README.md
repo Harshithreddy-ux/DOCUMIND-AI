@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1>🧠 DocuMind AI</h1>
+  <h1>DocuMind AI</h1>
   <h3><em>Autonomous Document Intelligence Fabric for Enterprise & SMEs</em></h3>
 
   <p>
