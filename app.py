@@ -1,15 +1,14 @@
 """
 app.py — DocuMind AI
 ====================
-Glassmorphism SaaS Platform Frontend for DocuMind AI.
+Next.js-Style Hyper-Premium Dark SaaS Platform Frontend for DocuMind AI.
 
-Features:
-  - Dark Glassmorphism aesthetic (radial gradient background, blur backdrop filters, hover glows)
-  - streamlit_option_menu navigation bar with custom orange theme (#FF5A1F)
-  - Interactive Plotly financial & pipeline analytics charts
-  - Snappy loading states with st.spinner() and st.toast()
-  - Zero default emojis; clean enterprise typography
-  - Robust error handling for backend offline states
+Navigation (Trimmed & High-Impact):
+  1. Omni-Ingestion Hub (Default Landing Page)
+  2. HITL Verification
+  3. Knowledge Graph
+  4. RAG Intelligence
+  5. Financial Analytics
 
 Run with:
   streamlit run app.py --server.port 8501
@@ -39,7 +38,7 @@ except ImportError:
 
 # ── Page Configuration ────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="DocuMind AI — Enterprise Document Intelligence",
+    page_title="DocuMind AI Platform",
     page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
@@ -48,11 +47,11 @@ st.set_page_config(
 # ── Configuration Constants ───────────────────────────────────────────────────
 API_BASE = "http://localhost:8000"
 
-# ── Glassmorphism & Radial Dark Theme CSS Injection ──────────────────────────
+# ── Hyper-Premium Animated Dark Gradient & Glassmorphism CSS ────────────────
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     /* ── Hide Streamlit Default Chrome ───────────────────────────────────────── */
     #MainMenu { visibility: hidden !important; }
@@ -64,103 +63,165 @@ st.markdown(
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
-        max-width: 96% !important;
+        max-width: 95% !important;
     }
 
-    /* ── Dark Radial Glassmorphism Background ───────────────────────────────── */
+    /* ── Animated Living Dark Gradient Background ────────────────────────────── */
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
     html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
     .stApp {
-        background: radial-gradient(circle at 85% 15%, #1e102a 0%, #0a0f1c 50%, #070a12 100%) !important;
+        background: linear-gradient(-45deg, #07090e, #111827, #1a0f2e, #0c0a1d) !important;
+        background-size: 400% 400% !important;
+        animation: gradientBG 15s ease infinite !important;
         background-attachment: fixed !important;
         color: #F8FAFC !important;
     }
 
-    /* ── Keyframe Animations ─────────────────────────────────────────────────── */
-    @keyframes fadeInUp {
-        from {
+    /* ── Entry Slide-Up Animations ───────────────────────────────────────────── */
+    @keyframes fadeSlideUp {
+        0% {
             opacity: 0;
-            transform: translateY(16px);
+            transform: translateY(20px);
         }
-        to {
+        100% {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
-    .animate-fade-in {
-        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .stMarkdown, .stDataFrame, .glass-card, .metric-card, .stForm {
+        animation: fadeSlideUp 0.4s ease-out forwards;
     }
+
+    /* ── Heavy Glassmorphism Cards ───────────────────────────────────────────── */
+    .glass-card, .metric-card {
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .glass-card:hover, .metric-card:hover {
+        border-color: rgba(255, 90, 31, 0.4) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 32px rgba(255, 90, 31, 0.25), 0 0 0 1px rgba(255, 90, 31, 0.2) !important;
+    }
+
+    /* ── Bold Headers ───────────────────────────────────────────────────────── */
+    h1 {
+        font-size: 2.25rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -1px !important;
+        color: #FFFFFF !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    h2, h3, h4 {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px !important;
+    }
+
+    p, span, label { color: #CBD5E1; }
+    hr { border-color: rgba(255, 255, 255, 0.08) !important; }
 
     /* ── Sidebar Styling (Dark Glass Shell) ─────────────────────────────────── */
     [data-testid="stSidebar"] {
-        background: rgba(11, 15, 25, 0.75) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
+        background: rgba(9, 11, 18, 0.8) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
     .sidebar-brand {
-        padding: 1.25rem 0.5rem 1.5rem 0.5rem;
-        margin-bottom: 1.25rem;
+        padding: 1.5rem 0.5rem 1.5rem 0.5rem;
+        margin-bottom: 1.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .sidebar-brand-name {
-        font-size: 1.35rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
+        font-size: 1.4rem;
+        font-weight: 900;
+        letter-spacing: -1px;
         color: #FFFFFF;
     }
 
     .sidebar-brand-name span {
         color: #FF5A1F;
+        text-shadow: 0 0 12px rgba(255, 90, 31, 0.6);
     }
 
     .sidebar-brand-sub {
         font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         color: #64748B;
         margin-top: 0.25rem;
     }
 
-    /* ── Glassmorphism Metric Cards ─────────────────────────────────────────── */
-    .metric-card {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        padding: 1.25rem 1.5rem !important;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    /* ── Neon Action Buttons ────────────────────────────────────────────────── */
+    .stButton > button {
+        background: rgba(255, 255, 255, 0.04);
+        color: #F8FAFC;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 0.6rem 1.1rem;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .metric-card:hover {
-        border-color: rgba(255, 90, 31, 0.5) !important;
-        transform: translateY(-3px) !important;
-        box-shadow: 0 8px 24px rgba(255, 90, 31, 0.25), 0 0 0 1px rgba(255, 90, 31, 0.3) !important;
+    .stButton > button:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
 
+    button[kind="primary"] {
+        background: #FF5A1F !important;
+        color: #FFFFFF !important;
+        border: 1px solid #E04810 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 16px rgba(255, 90, 31, 0.45) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    button[kind="primary"]:hover {
+        background: #E04810 !important;
+        box-shadow: 0 0 24px rgba(255, 90, 31, 0.7) !important;
+        transform: translateY(-2px) scale(1.02) !important;
+    }
+
+    /* ── Custom Metric Card Styling ─────────────────────────────────────────── */
     .metric-title {
         font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.07em;
+        letter-spacing: 0.08em;
         color: #94A3B8;
         margin-bottom: 0.4rem;
     }
 
     .metric-value {
-        font-size: 2.15rem;
-        font-weight: 800;
+        font-size: 2.25rem;
+        font-weight: 900;
         color: #F8FAFC;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.04em;
         line-height: 1.1;
     }
 
@@ -177,61 +238,7 @@ st.markdown(
     .badge-green  { background: rgba(34, 197, 94, 0.15);  color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.3); }
     .badge-blue   { background: rgba(59, 130, 246, 0.15);  color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
 
-    /* ── Content Glass Cards ─────────────────────────────────────────────────── */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        padding: 1.5rem !important;
-        margin-bottom: 1.5rem !important;
-    }
-
-    /* ── Main Buttons ───────────────────────────────────────────────────────── */
-    .stButton > button {
-        background: rgba(255, 255, 255, 0.05);
-        color: #F8FAFC;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .stButton > button:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.25);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-    }
-
-    button[kind="primary"] {
-        background: #FF5A1F !important;
-        color: #FFFFFF !important;
-        border: 1px solid #E04810 !important;
-        box-shadow: 0 2px 10px rgba(255, 90, 31, 0.35) !important;
-    }
-
-    button[kind="primary"]:hover {
-        background: #E04810 !important;
-        box-shadow: 0 6px 20px rgba(255, 90, 31, 0.5) !important;
-        transform: translateY(-2px) scale(1.01) !important;
-    }
-
-    /* ── Status Banner & Pills ──────────────────────────────────────────────── */
-    .status-banner-warning {
-        background: rgba(255, 90, 31, 0.1);
-        border: 1px solid rgba(255, 90, 31, 0.3);
-        border-radius: 10px;
-        padding: 0.875rem 1.25rem;
-        color: #FF9D7A;
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-bottom: 1.25rem;
-    }
-
+    /* ── Status Pills ───────────────────────────────────────────────────────── */
     .pill {
         font-size: 0.725rem;
         font-weight: 700;
@@ -247,11 +254,11 @@ st.markdown(
     .pill-error      { background: rgba(239, 68, 68, 0.15);  color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
     .pill-queued     { background: rgba(148, 163, 184, 0.15); color: #CBD5E1; border: 1px solid rgba(148, 163, 184, 0.3); }
 
-    /* ── Chat Styling ───────────────────────────────────────────────────────── */
+    /* ── Chat Messaging Box Styling ─────────────────────────────────────────── */
     .chat-user-box {
         background: #2563EB;
         color: #FFFFFF;
-        border-radius: 12px 12px 2px 12px;
+        border-radius: 14px 14px 2px 14px;
         padding: 0.875rem 1.125rem;
         margin: 0.5rem 0;
         max-width: 82%;
@@ -264,7 +271,7 @@ st.markdown(
         background: rgba(255, 255, 255, 0.04);
         color: #E2E8F0;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px 12px 12px 2px;
+        border-radius: 14px 14px 14px 2px;
         padding: 0.875rem 1.125rem;
         margin: 0.5rem 0;
         max-width: 82%;
@@ -272,10 +279,6 @@ st.markdown(
         clear: both;
         font-size: 0.9rem;
     }
-
-    h1, h2, h3, h4 { color: #F8FAFC !important; font-weight: 700 !important; }
-    p, span, label { color: #CBD5E1; }
-    hr { border-color: rgba(255, 255, 255, 0.08) !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -285,13 +288,12 @@ st.markdown(
 # ── Session State Initialization ──────────────────────────────────────────────
 def _init_session() -> None:
     defaults: Dict[str, Any] = {
-        "page": "Home",
+        "page": "Upload",  # Default page is now Omni-Ingestion Hub
         "jobs": [],
         "selected_job": None,
         "chat_history": [],
         "graph_data": None,
         "upload_queue": [],
-        "backend_online": True,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -306,10 +308,8 @@ def api_get(path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict
     try:
         r = requests.get(f"{API_BASE}{path}", params=params, timeout=5)
         r.raise_for_status()
-        st.session_state.backend_online = True
         return r.json()
     except Exception:
-        st.session_state.backend_online = False
         return None
 
 
@@ -322,10 +322,8 @@ def api_post(
         else:
             r = requests.post(f"{API_BASE}{path}", json=json_data, timeout=30)
         r.raise_for_status()
-        st.session_state.backend_online = True
         return r.json()
     except Exception:
-        st.session_state.backend_online = False
         return None
 
 
@@ -346,27 +344,27 @@ with st.sidebar:
         """
         <div class="sidebar-brand">
             <div class="sidebar-brand-name">DocuMind <span>AI</span></div>
-            <div class="sidebar-brand-sub">Document Intelligence Platform</div>
+            <div class="sidebar-brand-sub">Enterprise Document Intelligence</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    # Trimmed 5-page navigation (System Overview removed, Omni-Ingestion is landing page)
     nav_labels = [
-        "System Overview",
         "Omni-Ingestion Hub",
         "HITL Verification",
         "Knowledge Graph",
         "RAG Intelligence",
         "Financial Analytics",
     ]
-    nav_keys = ["Home", "Upload", "HITL", "Graph", "Chat", "Dashboard"]
+    nav_keys = ["Upload", "HITL", "Graph", "Chat", "Dashboard"]
 
     if HAS_OPTION_MENU:
         selected_nav = option_menu(
             menu_title=None,
             options=nav_labels,
-            icons=["house", "cloud-upload", "check-circle", "diagram-3", "chat-dots", "graph-up"],
+            icons=["cloud-upload", "check-circle", "diagram-3", "chat-dots", "graph-up"],
             default_index=nav_keys.index(st.session_state.page)
             if st.session_state.page in nav_keys
             else 0,
@@ -380,53 +378,31 @@ with st.sidebar:
                     "font-size": "0.85rem",
                     "text-align": "left",
                     "margin": "0px",
-                    "padding": "0.65rem 0.85rem",
+                    "padding": "0.7rem 0.85rem",
                     "font-weight": "600",
                     "color": "#94A3B8",
-                    "--hover-color": "rgba(255, 255, 255, 0.06)",
-                    "border-radius": "8px",
+                    "--hover-color": "rgba(255, 255, 255, 0.05)",
+                    "border-radius": "10px",
                 },
                 "nav-link-selected": {
                     "background-color": "#FF5A1F",
                     "color": "#FFFFFF",
                     "font-weight": "700",
-                    "box-shadow": "0 4px 12px rgba(255, 90, 31, 0.35)",
+                    "box-shadow": "0 0 16px rgba(255, 90, 31, 0.45)",
                 },
             },
         )
         st.session_state.page = nav_keys[nav_labels.index(selected_nav)]
     else:
-        # Fallback if option_menu not installed
         for label, key in zip(nav_labels, nav_keys):
             if st.button(label, use_container_width=True, key=f"nav_{key}"):
                 st.session_state.page = key
 
-    st.markdown("<br><hr>", unsafe_allow_html=True)
-
-    if st.button("Check Backend Status", use_container_width=True):
-        health = api_get("/health")
-        if health:
-            st.success("Services Operational")
-        else:
-            st.warning("Backend Services Initializing...")
-
     st.markdown(
         """
-        <div style="padding-top: 1.5rem; color: #475569; font-size: 0.75rem;">
+        <div style="padding-top: 3rem; color: #475569; font-size: 0.75rem;">
             Engine v1.0.0<br>
             Multi-Modal Fabric
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# ── Backend Warning Banner ────────────────────────────────────────────────────
-if not st.session_state.get("backend_online", True):
-    st.markdown(
-        """
-        <div class="status-banner-warning">
-            <strong>Backend Services Initializing</strong> — The DocuMind API engine is starting up or offline. Local UI remains responsive.
         </div>
         """,
         unsafe_allow_html=True,
@@ -437,126 +413,12 @@ if not st.session_state.get("backend_online", True):
 page = st.session_state.page
 
 # ==============================================================================
-# PAGE 1: SYSTEM OVERVIEW (HOME)
+# PAGE 1: OMNI-INGESTION HUB (DEFAULT LANDING PAGE)
 # ==============================================================================
-if page == "Home":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
-    st.markdown("<h1>System Overview</h1>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='color:#94A3B8;'>Real-time metrics, active pipeline stages, and document intelligence throughput.</p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Fetch system metrics
-    jobs_data = api_get("/jobs") or {"jobs": []}
-    docs_data = api_get("/documents", {"limit": 100}) or {"documents": []}
-
-    all_jobs = jobs_data.get("jobs", [])
-    all_docs = docs_data.get("documents", [])
-
-    hitl_count = sum(1 for j in all_jobs if j.get("status") == "awaiting_hitl")
-    complete_count = sum(1 for j in all_jobs if j.get("status") == "complete")
-    running_count = sum(1 for j in all_jobs if j.get("status") == "running")
-
-    # Glassmorphism HTML Metric Cards
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-title">Total Documents</div>
-                <div class="metric-value">{len(all_docs)}</div>
-                <div class="metric-badge badge-blue">Processed Corpus</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with m2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-title">Awaiting HITL</div>
-                <div class="metric-value">{hitl_count}</div>
-                <div class="metric-badge badge-orange">Review Required</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with m3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-title">Completed Jobs</div>
-                <div class="metric-value">{complete_count}</div>
-                <div class="metric-badge badge-green">Pipeline Success</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with m4:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-title">Active Processing</div>
-                <div class="metric-value">{running_count}</div>
-                <div class="metric-badge badge-orange">In Flight</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    col_left, col_right = st.columns([2, 1])
-
-    with col_left:
-        st.markdown("### Recent Execution Queue")
-        if all_jobs:
-            for job in sorted(all_jobs, key=lambda x: x.get("created_at", ""), reverse=True)[:6]:
-                c1, c2, c3 = st.columns([3, 1, 1])
-                c1.markdown(
-                    f"**{job.get('file_name', 'Untitled')}**  \n`<span style='color:#64748B;'>{job.get('job_id', '')[:12]}...</span>`",
-                    unsafe_allow_html=True,
-                )
-                c2.markdown(render_status_pill(job.get("status", "queued")), unsafe_allow_html=True)
-                c3.markdown(
-                    f"<span style='color:#64748B; font-size:0.8rem;'>{job.get('source_channel', 'web')}</span>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown("<hr style='margin:0.5rem 0;'>", unsafe_allow_html=True)
-        else:
-            st.markdown(
-                "<div style='color:#64748B; padding:1rem 0;'>No recent jobs queued. Upload documents via the Ingestion Hub.</div>",
-                unsafe_allow_html=True,
-            )
-
-    with col_right:
-        st.markdown("### Platform Architecture")
-        st.markdown(
-            """
-            <div class="glass-card" style="font-size:0.85rem;">
-                <div style="margin-bottom:0.75rem;"><strong style="color:#FF5A1F;">Orchestration:</strong> LangGraph StateGraph</div>
-                <div style="margin-bottom:0.75rem;"><strong style="color:#FF5A1F;">Perception:</strong> PaddleOCR & LayoutParser</div>
-                <div style="margin-bottom:0.75rem;"><strong style="color:#FF5A1F;">Cognition:</strong> Local Ollama 4-bit Engine</div>
-                <div style="margin-bottom:0.75rem;"><strong style="color:#FF5A1F;">Vector Store:</strong> PostgreSQL pgvector</div>
-                <div><strong style="color:#FF5A1F;">Graph DB:</strong> Neo4j Enterprise</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ==============================================================================
-# PAGE 2: OMNI-INGESTION HUB
-# ==============================================================================
-elif page == "Upload":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
+if page == "Upload":
     st.markdown("<h1>Omni-Ingestion Hub</h1>", unsafe_allow_html=True)
     st.markdown(
-        "<p style='color:#94A3B8;'>Multi-channel document capture with priority scheduling.</p>",
+        "<p style='color:#94A3B8;'>Multi-channel document capture with priority scheduling & multi-modal processing.</p>",
         unsafe_allow_html=True,
     )
     st.markdown("<br>", unsafe_allow_html=True)
@@ -564,6 +426,7 @@ elif page == "Upload":
     col_up, col_q = st.columns([1, 1])
 
     with col_up:
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("### Upload Documents")
         uploaded_files = st.file_uploader(
             "Select or drop files",
@@ -604,8 +467,10 @@ elif page == "Upload":
                 st.toast(
                     f"Successfully queued {len(uploaded_files)} document(s)!", icon="🚀"
                 )
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_q:
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("### Queue Monitor")
         if st.button("Refresh Queue", use_container_width=True):
             jobs_resp = api_get("/jobs")
@@ -627,15 +492,13 @@ elif page == "Upload":
                 c1.markdown(f"**{item['name']}** ({item['size_kb']} KB)")
                 c2.markdown(render_status_pill(item["status"]), unsafe_allow_html=True)
                 st.markdown("<hr style='margin:0.5rem 0;'>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ==============================================================================
-# PAGE 3: HITL VERIFICATION
+# PAGE 2: HITL VERIFICATION
 # ==============================================================================
 elif page == "HITL":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
     st.markdown("<h1>Human-in-the-Loop Verification</h1>", unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#94A3B8;'>Review extractions flagged for low confidence or causal discrepancies.</p>",
@@ -666,7 +529,7 @@ elif page == "HITL":
                 <div class="glass-card">
                     <div style="margin-bottom:0.5rem;"><strong>File:</strong> {job_state.get('file_name')}</div>
                     <div style="margin-bottom:0.5rem;"><strong>Doc Type:</strong> {job_state.get('document_type')}</div>
-                    <div><strong>Confidence:</strong> <span style="color:#FF5A1F; font-weight:700;">{conf:.0%}</span></div>
+                    <div><strong>Confidence:</strong> <span style="color:#FF5A1F; font-weight:800;">{conf:.0%}</span></div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -697,14 +560,11 @@ elif page == "HITL":
                         time.sleep(1)
                         st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 # ==============================================================================
-# PAGE 4: KNOWLEDGE GRAPH
+# PAGE 3: KNOWLEDGE GRAPH
 # ==============================================================================
 elif page == "Graph":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
     st.markdown("<h1>Living Knowledge Graph</h1>", unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#94A3B8;'>Entity relationship topology powered by Neo4j graph store.</p>",
@@ -759,14 +619,11 @@ elif page == "Graph":
             st.warning("Install `streamlit-agraph` for interactive graph rendering.")
             st.dataframe(nodes)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 # ==============================================================================
-# PAGE 5: RAG INTELLIGENCE (CHAT)
+# PAGE 4: RAG INTELLIGENCE (CHAT)
 # ==============================================================================
 elif page == "Chat":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
     st.markdown("<h1>RAG Conversation Layer</h1>", unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#94A3B8;'>Natural language cross-document synthesis powered by pgvector & local LLM.</p>",
@@ -830,14 +687,11 @@ elif page == "Chat":
                 st.session_state.chat_history.append({"role": "ai", "content": answer})
                 st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 # ==============================================================================
-# PAGE 6: FINANCIAL ANALYTICS (DASHBOARD WITH PLOTLY)
+# PAGE 5: FINANCIAL ANALYTICS (DASHBOARD WITH PLOTLY)
 # ==============================================================================
 elif page == "Dashboard":
-    st.markdown('<div class="animate-fade-in">', unsafe_allow_html=True)
     st.markdown("<h1>Financial Analytics</h1>", unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#94A3B8;'>Real-time SME health, document volume trends, and contractual obligation monitoring.</p>",
@@ -924,7 +778,7 @@ elif page == "Dashboard":
             fig_bar.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font={"family": "Plus Jakarta Sans", "color": "#CBD5E1"},
+                font={"family": "Inter", "color": "#CBD5E1"},
                 margin=dict(l=20, r=20, t=30, b=20),
                 height=320,
             )
@@ -954,7 +808,7 @@ elif page == "Dashboard":
             fig_line.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font={"family": "Plus Jakarta Sans", "color": "#CBD5E1"},
+                font={"family": "Inter", "color": "#CBD5E1"},
                 margin=dict(l=20, r=20, t=30, b=20),
                 height=320,
             )
@@ -962,5 +816,3 @@ elif page == "Dashboard":
             st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Install Plotly (`pip install plotly`) for interactive charts.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
