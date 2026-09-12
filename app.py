@@ -172,6 +172,14 @@ footer { visibility: hidden !important; }
 div[data-testid="stDecoration"] { display: none !important; }
 div[data-testid="stStatusWidget"] { display: none !important; }
 [data-testid="InputInstructions"] { display: none !important; }
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+button[data-testid="stBaseButton-headerNoPadding"] { display: none !important; }
+[data-testid="collapsedControl"] { display: none !important; }
+div[data-testid="stSidebarHeader"] button { display: none !important; }
+section[data-testid="stSidebar"] > div:first-child button { display: none !important; }
+button[aria-label="Close sidebar"] { display: none !important; }
+button[aria-label="Open sidebar"] { display: none !important; }
 
 .block-container {
     padding-top: 1rem !important;
@@ -492,24 +500,8 @@ def render_status_pill(status: str) -> str:
 
 
 def demo_banner() -> None:
-    """Transparent 'Live Demo Mode' caption — judges appreciate honesty."""
-    st.markdown(
-        """
-        <div style="
-            background: rgba(255,183,77,0.08);
-            border: 1px solid rgba(255,183,77,0.30);
-            border-radius: 10px;
-            padding: 0.6rem 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.82rem;
-            color: #FFB74D;
-        ">
-        &#9888;&nbsp;<strong>Live Demo Mode</strong> &mdash; sample data shown;
-        connect a running backend for real ingestion &amp; AI processing.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """No-op: Demo status is displayed as a quiet pill in the sidebar."""
+    pass
 
 
 # ── Sidebar Navigation with streamlit-option-menu ─────────────────────────────
@@ -573,13 +565,36 @@ with st.sidebar:
 
     st.markdown(
         """
-        <div style="padding-top: 3rem; color: #6B4A34; font-size: 0.75rem;">
+        <div style="padding-top: 2.5rem; color: #6B4A34; font-size: 0.75rem;">
             Engine v1.0.0<br>
             Multi-Modal Fabric
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    if is_demo():
+        st.markdown(
+            """
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 0.65rem;
+                padding: 3px 10px;
+                border-radius: 9999px;
+                background: rgba(255, 183, 77, 0.08);
+                border: 1px solid rgba(255, 183, 77, 0.22);
+                color: #FFB74D;
+                font-size: 0.72rem;
+                font-weight: 500;
+                letter-spacing: 0.2px;
+            ">
+                <span style="color: #FF9152; font-size: 0.65rem;">●</span> Demo Mode &middot; Sample Data
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 # ── Page Router ───────────────────────────────────────────────────────────────
 page = st.session_state.page
@@ -596,8 +611,6 @@ if page == "Upload":
     st.markdown("<br>", unsafe_allow_html=True)
 
     _demo = is_demo()
-    if _demo:
-        demo_banner()
 
     col_up, col_q = st.columns([1, 1])
 
@@ -621,14 +634,25 @@ if page == "Upload":
                 st.warning("Please attach at least one document.")
             else:
                 with st.spinner("Dispatching documents to ingestion pipeline..."):
+                    # Deduplicate input files to guarantee exactly one entry per file
+                    unique_files_map = {}
                     for uf in uploaded_files:
+                        if uf.name not in unique_files_map:
+                            unique_files_map[uf.name] = uf
+                    unique_files = list(unique_files_map.values())
+
+                    for uf in unique_files:
                         raw = uf.read()
+                        # Deduplicate in queue: replace prior entry with same filename
+                        st.session_state.upload_queue = [
+                            q for q in st.session_state.upload_queue if q.get("name") != uf.name
+                        ]
                         if _demo:
                             st.session_state.upload_queue.append({
                                 "name": uf.name,
                                 "size_kb": round(len(raw) / 1024, 1),
                                 "priority": priority,
-                                "job_id": f"demo-{uf.name[:8]}",
+                                "job_id": f"demo-{uf.name[:8]}-{int(time.time()) % 1000}",
                                 "status": "queued",
                             })
                         else:
@@ -646,13 +670,31 @@ if page == "Upload":
                                 })
                         time.sleep(0.3)
                 st.toast(
-                    f"Queued {len(uploaded_files)} document(s)!", icon="🚀"
+                    f"Queued {len(unique_files)} document(s)!", icon="🚀"
                 )
 
     with col_q:
         st.markdown("### Queue Monitor")
         if st.button("Refresh Queue", use_container_width=True):
-            if not _demo:
+            if _demo:
+                advanced = 0
+                for q_item in st.session_state.upload_queue:
+                    curr_st = q_item.get("status", "queued")
+                    if curr_st == "queued":
+                        q_item["status"] = "running"
+                        advanced += 1
+                    elif curr_st == "running":
+                        fname = q_item.get("name", "").lower()
+                        if any(kw in fname for kw in ["contract", "legal", "agree"]):
+                            q_item["status"] = "awaiting_hitl"
+                        else:
+                            q_item["status"] = "complete"
+                        advanced += 1
+                if advanced > 0:
+                    st.toast("Pipeline stage advanced!", icon="⚡")
+                else:
+                    st.toast("Queue up to date.", icon="🔄")
+            else:
                 jobs_resp = api_get("/jobs")
                 if jobs_resp:
                     j_map = {j["job_id"]: j["status"] for j in jobs_resp.get("jobs", [])}
@@ -702,7 +744,6 @@ elif page == "HITL":
 
     _demo = is_demo()
     if _demo:
-        demo_banner()
         hitl_jobs = [j for j in DEMO_JOBS if j.get("status") == "awaiting_hitl"]
         job_state = hitl_jobs[0] if hitl_jobs else None
         if hitl_jobs:
@@ -792,8 +833,6 @@ elif page == "Graph":
     st.markdown("<br>", unsafe_allow_html=True)
 
     _demo = is_demo()
-    if _demo:
-        demo_banner()
 
     if st.button("Refresh Graph View", type="primary"):
         if _demo:
@@ -911,8 +950,6 @@ elif page == "Chat":
     st.markdown("<br>", unsafe_allow_html=True)
 
     _demo = is_demo()
-    if _demo:
-        demo_banner()
 
     c_chat, c_side = st.columns([2, 1])
 
@@ -987,7 +1024,6 @@ elif page == "Dashboard":
 
     _demo = is_demo()
     if _demo:
-        demo_banner()
         docs = DEMO_DOCS
     else:
         docs_data = api_get("/documents", {"limit": 100}) or {"documents": []}
