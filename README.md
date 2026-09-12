@@ -1,8 +1,32 @@
-# DocuMind AI
+<div align="center">
 
-**Autonomous Document Intelligence Fabric for Enterprise & SMEs**
+  <h1>🧠 DocuMind AI</h1>
+  <h3><em>Autonomous Document Intelligence Fabric for Enterprise & SMEs</em></h3>
 
-DocuMind AI is a multi-modal, agentic document intelligence system built on top of LangGraph, Ollama, pgvector, and Neo4j. It transforms unstructured business documents (invoices, contracts, receipts, purchase orders) into a structured, queryable knowledge graph with automated decisioning and human-in-the-loop governance.
+  <p>
+    <a href="https://github.com/Harshithreddy-ux/DOCUMIND-AI/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+    <a href="https://github.com/Harshithreddy-ux/DOCUMIND-AI/actions"><img src="https://img.shields.io/badge/Build-Passing-brightgreen.svg" alt="CI Status"></a>
+    <img src="https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white" alt="Python Version">
+    <img src="https://img.shields.io/badge/Orchestration-LangGraph-6f42c1.svg" alt="LangGraph">
+    <img src="https://img.shields.io/badge/LLM-Ollama_4--bit-FF6F00.svg" alt="Ollama">
+    <img src="https://img.shields.io/badge/OS-Windows_11-0078D4.svg?logo=windows&logoColor=white" alt="Windows 11">
+    <img src="https://img.shields.io/badge/VRAM-≤_4GB-red.svg" alt="VRAM Ceiling">
+  </p>
+
+  <p>
+    <strong>Transforming unstructured business documents (invoices, contracts, receipts, purchase orders) into a structured, queryable knowledge graph with automated decisioning and human-in-the-loop governance.</strong>
+  </p>
+
+  <p>
+    <a href="#-system-architecture">Architecture</a> •
+    <a href="#-document-processing-workflow">Workflow</a> •
+    <a href="#-quick-start-windows-11">Quick Start</a> •
+    <a href="#-core-innovations">Innovations</a> •
+    <a href="#-api-reference-summary">API Reference</a> •
+    <a href="#-author--maintainer">Author</a>
+  </p>
+
+</div>
 
 ---
 
