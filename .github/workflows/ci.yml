@@ -1,0 +1,67 @@
+name: DocuMind AI CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install lint dependencies
+        run: pip install ruff mypy types-requests
+
+      - name: Ruff lint
+        run: ruff check . --select E,F,W,I --ignore E501
+
+      - name: Type check (mypy)
+        run: mypy state.py cognition.py --ignore-missing-imports --no-strict-optional
+        continue-on-error: true   # informational only during hackathon
+
+  test:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-asyncio httpx pydantic
+          pip install fastapi uvicorn python-multipart
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+        env:
+          POSTGRES_HOST: localhost
+          NEO4J_URI: bolt://localhost:7687
+          OLLAMA_BASE_URL: http://localhost:11434
+
+  docker-build:
+    name: 🐳 Docker Compose Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose config
+
+      - name: Pull images (dry-run)
+        run: docker compose pull --quiet
+        continue-on-error: true

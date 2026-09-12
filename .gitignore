@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment & secrets
+.env
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Logs
+logs/
+*.log
+nohup.out
+
+# PID files
+*.pid
+.fastapi.pid
+.streamlit.pid
+
+# PaddleOCR & model cache
+inference/
+~/.paddleocr/
+paddleocr_weights/
+*.pdmodel
+*.pdparams
+
+# Ollama (models stored system-wide, not in repo)
+models/
+
+# Docker volumes (data stored by docker compose)
+postgres_data/
+neo4j_data/
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Jupyter notebooks (keep .ipynb.md summaries, not raw notebooks)
+*.ipynb
+
+# Uploaded documents (user data — never commit)
+uploads/
+sample_docs/*.pdf
+sample_docs/*.png
